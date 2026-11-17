@@ -1,15 +1,15 @@
 ﻿# Functional requirements
 
-1. The service must expose /health and /ready endpoints so operators can check liveness and readiness.
-2. The API must list documents from the loaded JSON records with a pagination limit and optional search query.
-3. The service must return one document by ID and fail with a problem-details response when no record matches.
-4. Invalid query parameters, such as limit=0, must return HTTP 422 with field-level validation details.
-5. The application must fail fast when APP_ENV is missing or invalid.
+1. `GET /health` must return HTTP 200; `GET /ready` must return HTTP 200 when records load and HTTP 503 otherwise.
+2. `GET /v1/documents` must list loaded records, support case-insensitive `q` search, and accept a `limit` from 1 to 100.
+3. `GET /v1/documents/{id}` must return the matching record; an unknown ID must return HTTP 404 as `application/problem+json`.
+4. Invalid limits, including 0 and 101, must return HTTP 422 with at least one field-level validation error.
+5. `APP_ENV` must accept only `local`, `ci`, or `production`; a missing or invalid value must prevent settings creation.
 
 # Non-functional requirements
 
-1. The app must run under Python 3.12 or newer.
-2. All request logs must include a request ID and be emitted as single-line JSON.
-3. The project must use uv for dependency management and lock files.
-4. The code base must pass Ruff and pytest checks before a merge.
-5. Secret scanning and pre-commit hooks must run automatically for each commit.
+1. The app must run on Python 3.12 or newer.
+2. 100% of successful and handled-error HTTP responses must include `X-Request-ID`; each request log must be one JSON line containing `request_id`.
+3. Runtime and development dependencies must be managed by uv and pinned in the committed `uv.lock`.
+4. Before merge, all 10 API tests must pass and `ruff check .` must report 0 errors.
+5. All 9 configured pre-commit hooks, including secret scanning, must run automatically on each commit and pass.
