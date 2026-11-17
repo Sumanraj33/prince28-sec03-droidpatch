@@ -1,0 +1,202 @@
+[
+  {
+    "id": "001",
+    "bulletin_month": "2024-05",
+    "patch_level": "2024-05-01",
+    "cve_id": "CVE-2024-0024",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "002",
+    "bulletin_month": "2024-05",
+    "patch_level": "2024-05-01",
+    "cve_id": "CVE-2024-23706",
+    "component": "System",
+    "severity": "Critical",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["14"]
+  },
+  {
+    "id": "003",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31310",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "004",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31311",
+    "component": "System",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "005",
+    "bulletin_month": "2024-07",
+    "patch_level": "2024-07-01",
+    "cve_id": "CVE-2024-31320",
+    "component": "Framework",
+    "severity": "Critical",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L"]
+  },
+  {
+    "id": "006",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31316",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "007",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31317",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "008",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31318",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "009",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31319",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "010",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31322",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "011",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31324",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "012",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31325",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "013",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31326",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["14"]
+  },
+  {
+    "id": "014",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31312",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Information Disclosure",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "015",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31314",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Denial of Service",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "016",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31313",
+    "component": "System",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "017",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31315",
+    "component": "System",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "018",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31323",
+    "component": "System",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["14"]
+  },
+  {
+    "id": "019",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-31327",
+    "component": "System",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  },
+  {
+    "id": "020",
+    "bulletin_month": "2024-07",
+    "patch_level": "2024-07-01",
+    "cve_id": "CVE-2024-31331",
+    "component": "Framework",
+    "severity": "High",
+    "type": "Elevation of Privilege",
+    "updated_aosp_versions": ["12", "12L", "13", "14"]
+  }
+]
