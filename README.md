@@ -4,7 +4,7 @@ Answers which Android security bulletin fixed a CVE, which patch level covers it
 
 ## Status
 
-Day 1 foundation (FastAPI skeleton, quality gates). Live URL from Day 5.
+FastAPI foundation and Critical CVE exposure lookup are implemented. Live URL from Day 5.
 
 ## Who it's for
 
@@ -43,6 +43,10 @@ uv run uvicorn droidpatch.api.main:create_app --factory --reload
 ```
 
 Then open http://localhost:8000/docs
+
+## Exposure lookup
+
+`GET /v1/exposure?patch_level=2024-05-05` returns Critical CVEs fixed after that patch level, grouped by component. Patch levels are compared as dates; a CVE fixed at the supplied patch level is not considered exposed.
 
 ## Checks
 
