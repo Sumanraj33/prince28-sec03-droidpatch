@@ -1,0 +1,52 @@
+[
+  {
+    "id": "001",
+    "bulletin_month": "2024-05",
+    "patch_level": "2024-05-01",
+    "cve_id": "CVE-2024-28986",
+    "component": "Framework",
+    "severity": "High",
+    "type": "remote code execution",
+    "updated_aosp_versions": ["Android 14", "Android 15"]
+  },
+  {
+    "id": "002",
+    "bulletin_month": "2024-05",
+    "patch_level": "2024-05-05",
+    "cve_id": "CVE-2024-28987",
+    "component": "System",
+    "severity": "Critical",
+    "type": "privilege escalation",
+    "updated_aosp_versions": ["Android 13", "Android 14"]
+  },
+  {
+    "id": "003",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-01",
+    "cve_id": "CVE-2024-30459",
+    "component": "Qualcomm",
+    "severity": "High",
+    "type": "memory corruption",
+    "updated_aosp_versions": ["Android 13", "Android 14", "Android 15"]
+  },
+  {
+    "id": "004",
+    "bulletin_month": "2024-06",
+    "patch_level": "2024-06-05",
+    "cve_id": "CVE-2024-30460",
+    "component": "Kernel",
+    "severity": "Critical",
+    "type": "information disclosure",
+    "updated_aosp_versions": ["Android 14", "Android 15"]
+  },
+  {
+    "id": "005",
+    "bulletin_month": "2024-07",
+    "patch_level": "2024-07-01",
+    "cve_id": "CVE-2024-32974",
+    "component": "MediaTek",
+    "severity": "Moderate",
+    "type": "denial of service",
+    "updated_aosp_versions": ["Android 14"]
+  }
+]
