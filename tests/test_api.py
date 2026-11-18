@@ -47,6 +47,27 @@ def test_list_documents_paginates(client):
     assert len(body["items"]) == 2
 
 
+def test_list_documents_sorts_by_title_ascending(client):
+    response = client.get("/v1/documents", params={"sort": "title"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["items"]] == ["001", "002", "003"]
+
+
+def test_list_documents_sorts_by_published_on_descending(client):
+    response = client.get("/v1/documents", params={"sort": "-published_on"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["items"]] == ["002", "003", "001"]
+
+
+def test_list_documents_rejects_unapproved_sort_field(client):
+    response = client.get("/v1/documents", params={"sort": "metadata"})
+
+    assert response.status_code == 400
+    assert response.headers["content-type"] == "application/problem+json"
+
+
 def test_search_filters_records(client):
     r = client.get("/v1/documents", params={"q": "beta"})
     assert [d["id"] for d in r.json()["items"]] == ["002"]
@@ -151,6 +172,17 @@ def test_request_id_is_echoed_and_logged_as_json(client, caplog):
     log_line = JsonFormatter().format(request_log)
     assert len(log_line.splitlines()) == 1
     assert json.loads(log_line)["request_id"] == "abc123"
+
+
+def test_startup_logs_database_pool_status(client, caplog):
+    pool_log = next(
+        record
+        for record in caplog.get_records("setup")
+        if record.getMessage() == "database_pool_status"
+    )
+
+    assert "Pool size:" in pool_log.pool_status
+    assert "Current Checked out connections:" in pool_log.pool_status
 
 
 def test_app_refuses_to_start_without_app_env(monkeypatch):
