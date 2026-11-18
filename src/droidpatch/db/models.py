@@ -41,6 +41,7 @@ class Document(Base):
     licence: Mapped[str | None] = mapped_column(String(200))
     doc_type: Mapped[str] = mapped_column(String(50), server_default="record")
     published_on: Mapped[date | None]
+    bulletin_month: Mapped[str | None] = mapped_column(String(7))
     sha256: Mapped[str] = mapped_column(String(64), index=True)
 
     metadata_: Mapped[dict[str, Any]] = mapped_column(
@@ -58,6 +59,7 @@ class Document(Base):
 
     __table_args__ = (
         Index("ix_documents_doc_type", "doc_type"),
+        Index("ix_documents_bulletin_month", "bulletin_month"),
         Index(
             "ix_documents_metadata_gin",
             "metadata",

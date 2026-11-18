@@ -6,9 +6,24 @@ from droidpatch.api.main import create_app
 from droidpatch.config import Settings
 
 SAMPLE = [
-    {"id": "001", "title": "Alpha guideline", "year": 2023},
-    {"id": "002", "title": "Beta circular", "year": 2024},
-    {"id": "003", "title": "Gamma notice", "year": 2025},
+    {
+        "id": "001",
+        "title": "Alpha guideline",
+        "year": 2023,
+        "published_on": "2024-01-01",
+    },
+    {
+        "id": "002",
+        "title": "Beta circular",
+        "year": 2024,
+        "published_on": "2025-01-01",
+    },
+    {
+        "id": "003",
+        "title": "Gamma notice",
+        "year": 2025,
+        "published_on": "2024-06-01",
+    },
 ]
 
 EXPOSURE_RECORDS = [
@@ -44,7 +59,7 @@ EXPOSURE_RECORDS = [
 
 
 class FakeRepo:
-    async def list(self, *, q, filters, limit, offset):
+    async def list(self, *, q, filters, limit, offset, sort=None):
         records = SAMPLE
 
         if q:
@@ -52,6 +67,11 @@ class FakeRepo:
 
         for key, value in filters.items():
             records = [item for item in records if str(item.get(key)) == value]
+
+        if sort:
+            descending = sort.startswith("-")
+            field = sort[1:] if descending else sort
+            records = sorted(records, key=lambda item: item[field], reverse=descending)
 
         return len(records), records[offset : offset + limit]
 
