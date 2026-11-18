@@ -1,84 +1,76 @@
-"""Document endpoints."""
+"""Document endpoints backed by PostgreSQL."""
 
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from droidpatch.api.deps import get_records
+from droidpatch.api.deps import get_repo
+from droidpatch.db.repository import FILTER_KEY, DocumentRepository
 
 router = APIRouter()
 
 
 @router.get("/v1/documents")
-def list_documents(
+async def list_documents(
     request: Request,
     q: str | None = None,
     limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    repo: DocumentRepository = Depends(get_repo),  # noqa: B008
 ) -> dict[str, Any]:
-    records = get_records(request)
-    items = list(records)
-    if q:
-        q_lower = q.lower()
-        items = [item for item in items if q_lower in str(item).lower()]
-    total = len(items)
-    items = items[:limit]
-    return {"total": total, "limit": limit, "items": items}
+    """List documents with search, metadata filters and pagination."""
+    filters: dict[str, str] = {}
+
+    for key, value in request.query_params.items():
+        if key in {"q", "limit", "offset"}:
+            continue
+
+        if not FILTER_KEY.fullmatch(key):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid filter name: {key}",
+            )
+
+        filters[key] = value
+
+    total, items = await repo.list(
+        q=q,
+        filters=filters,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "filters": filters,
+        "items": items,
+    }
 
 
 @router.get("/v1/documents/{document_id}")
-def get_document(request: Request, document_id: str) -> dict[str, Any]:
-    records = get_records(request)
-    for item in records:
-        if str(item.get("id")) == document_id:
-            return item
-    raise HTTPException(status_code=404, detail=f"No document with id '{document_id}'.")
+async def get_document(
+    document_id: str,
+    repo: DocumentRepository = Depends(get_repo),  # noqa: B008
+) -> dict[str, Any]:
+    """Retrieve one document by its external ID."""
+    document = await repo.get(document_id)
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No document with id '{document_id}'.",
+        )
+
+    return document
 
 
 @router.get("/v1/exposure")
-def get_exposure(
-    request: Request,
+async def get_exposure(
     patch_level: date,
+    repo: DocumentRepository = Depends(get_repo),  # noqa: B008
 ) -> dict[str, Any]:
-    records = get_records(request)
-    exposed_by_component: dict[str, list[dict[str, Any]]] = {}
-
-    for record in records:
-        if str(record.get("severity", "")).casefold() != "critical":
-            continue
-
-        record_patch_level = record.get("patch_level")
-        component = record.get("component")
-        if (
-            not isinstance(record_patch_level, str)
-            or not isinstance(component, str)
-            or not component
-        ):
-            raise HTTPException(
-                status_code=500,
-                detail=f"Critical CVE record '{record.get('id', 'unknown')}' is missing "
-                "a valid patch_level or component.",
-            )
-        try:
-            fixed_patch_level = date.fromisoformat(record_patch_level)
-            if fixed_patch_level.isoformat() != record_patch_level:
-                raise ValueError("patch_level must use YYYY-MM-DD format")
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Critical CVE record '{record.get('id', 'unknown')}' has an invalid "
-                "patch_level.",
-            ) from exc
-
-        if fixed_patch_level > patch_level:
-            exposed_by_component.setdefault(component, []).append(record)
-
-    components = [
-        {"component": component, "cves": exposed_by_component[component]}
-        for component in sorted(exposed_by_component)
-    ]
-    return {
-        "patch_level": patch_level.isoformat(),
-        "total": sum(len(group["cves"]) for group in components),
-        "components": components,
-    }
+    """Return Critical CVEs fixed after the supplied patch level."""
+    return await repo.get_exposure(patch_level)
