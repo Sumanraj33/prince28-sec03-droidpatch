@@ -27,6 +27,8 @@ class JsonFormatter(logging.Formatter):
             payload["duration_ms"] = record.duration_ms
         if hasattr(record, "records"):
             payload["records"] = record.records
+        if hasattr(record, "pool_status"):
+            payload["pool_status"] = record.pool_status
         if record.exc_info:
             payload["exc_info"] = self.formatException(record.exc_info)
         return json.dumps(payload, separators=(",", ":"))

@@ -10,6 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from droidpatch.db.models import Document
 
 FILTER_KEY = re.compile(r"^[a-z_][a-z0-9_]{0,40}$")
+SORT_COLUMNS = {
+    "title": Document.title,
+    "published_on": Document.published_on,
+}
+
+
+def parse_sort(sort: str) -> tuple[str, bool]:
+    """Return a whitelisted sort column and whether it is descending."""
+    descending = sort.startswith("-")
+    field = sort[1:] if descending else sort
+    if field not in SORT_COLUMNS:
+        raise ValueError(f"Unsupported sort field: {field}")
+    return field, descending
 
 
 def to_dict(doc: Document) -> dict[str, Any]:
@@ -22,6 +35,7 @@ def to_dict(doc: Document) -> dict[str, Any]:
         "source_url": doc.source_url,
         "licence": doc.licence,
         "published_on": doc.published_on.isoformat() if doc.published_on else None,
+        "bulletin_month": doc.bulletin_month,
     }
 
 
@@ -53,6 +67,7 @@ class DocumentRepository:
         filters: dict[str, str],
         limit: int,
         offset: int,
+        sort: str | None = None,
     ) -> tuple[int, list[dict[str, Any]]]:
         """Search and filter documents."""
         stmt = select(Document)
@@ -67,6 +82,10 @@ class DocumentRepository:
             )
 
         for key, value in filters.items():
+            if key == "bulletin_month":
+                stmt = stmt.where(Document.bulletin_month == value)
+                continue
+
             stmt = stmt.where(
                 or_(
                     *(
@@ -78,9 +97,17 @@ class DocumentRepository:
 
         total = await self.session.scalar(select(func.count()).select_from(stmt.subquery()))
 
-        rows = await self.session.scalars(
-            stmt.order_by(Document.external_id).limit(limit).offset(offset)
-        )
+        if sort is None:
+            ordering = (Document.external_id,)
+        else:
+            field, descending = parse_sort(sort)
+            column = SORT_COLUMNS[field]
+            ordering = (
+                column.desc() if descending else column.asc(),
+                Document.external_id,
+            )
+
+        rows = await self.session.scalars(stmt.order_by(*ordering).limit(limit).offset(offset))
 
         return total or 0, [to_dict(doc) for doc in rows.all()]
 

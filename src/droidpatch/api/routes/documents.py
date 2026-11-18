@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from droidpatch.api.deps import get_repo
-from droidpatch.db.repository import FILTER_KEY, DocumentRepository
+from droidpatch.db.repository import FILTER_KEY, DocumentRepository, parse_sort
 
 router = APIRouter()
 
@@ -17,13 +17,23 @@ async def list_documents(
     q: str | None = None,
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    sort: str | None = None,
     repo: DocumentRepository = Depends(get_repo),  # noqa: B008
 ) -> dict[str, Any]:
     """List documents with search, metadata filters and pagination."""
     filters: dict[str, str] = {}
 
+    if sort is not None:
+        try:
+            parse_sort(sort)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid sort field: {sort}",
+            ) from exc
+
     for key, value in request.query_params.items():
-        if key in {"q", "limit", "offset"}:
+        if key in {"q", "limit", "offset", "sort"}:
             continue
 
         if not FILTER_KEY.fullmatch(key):
@@ -39,6 +49,7 @@ async def list_documents(
         filters=filters,
         limit=limit,
         offset=offset,
+        sort=sort,
     )
 
     return {
