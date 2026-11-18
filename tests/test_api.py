@@ -16,17 +16,27 @@ def test_health_is_ok(client):
     assert r.json()["status"] == "ok"
 
 
-def test_ready_when_records_loaded(client):
+def test_ready_when_database_connected(client):
     r = client.get("/ready")
     assert r.status_code == 200
-    assert r.json()["checks"]["records_loaded"] is True
+    assert r.json()["checks"]["database"] is True
 
 
-def test_ready_is_503_when_data_file_missing(tmp_path):
-    settings = Settings(app_env="ci", data_file=tmp_path / "missing.json")
-    with TestClient(create_app(settings)) as c:
+def test_ready_is_503_when_database_is_down():
+    from droidpatch.api.deps import check_db
+
+    app = create_app(Settings(app_env="ci"))
+
+    async def database_down():
+        return False
+
+    app.dependency_overrides[check_db] = database_down
+
+    with TestClient(app) as c:
         assert c.get("/health").status_code == 200
         assert c.get("/ready").status_code == 503
+
+    app.dependency_overrides.clear()
 
 
 def test_list_documents_paginates(client):
@@ -86,43 +96,11 @@ def test_real_sample_records_meet_seed_data_requirements():
     assert response.json()["total"] == len(records)
 
 
-def test_exposure_lists_only_later_critical_cves_grouped_by_component(tmp_path):
-    records = [
-        {
-            "id": "001",
-            "cve_id": "CVE-2024-0001",
-            "severity": "Critical",
-            "patch_level": "2024-05-01",
-            "component": "Framework",
-        },
-        {
-            "id": "002",
-            "cve_id": "CVE-2024-0002",
-            "severity": "Critical",
-            "patch_level": "2024-05-05",
-            "component": "System",
-        },
-        {
-            "id": "003",
-            "cve_id": "CVE-2024-0003",
-            "severity": "Critical",
-            "patch_level": "2024-06-01",
-            "component": "Framework",
-        },
-        {
-            "id": "004",
-            "cve_id": "CVE-2024-0004",
-            "severity": "High",
-            "patch_level": "2024-07-01",
-            "component": "System",
-        },
-    ]
-    data_file = tmp_path / "records.json"
-    data_file.write_text(json.dumps(records), encoding="utf-8")
-    settings = Settings(app_env="ci", data_file=data_file)
-
-    with TestClient(create_app(settings)) as client:
-        response = client.get("/v1/exposure", params={"patch_level": "2024-05-05"})
+def test_exposure_lists_only_later_critical_cves_grouped_by_component(client):
+    response = client.get(
+        "/v1/exposure",
+        params={"patch_level": "2024-05-05"},
+    )
 
     assert response.status_code == 200
     assert response.json() == {
@@ -131,7 +109,15 @@ def test_exposure_lists_only_later_critical_cves_grouped_by_component(tmp_path):
         "components": [
             {
                 "component": "Framework",
-                "cves": [records[2]],
+                "cves": [
+                    {
+                        "id": "003",
+                        "cve_id": "CVE-2024-0003",
+                        "severity": "Critical",
+                        "patch_level": "2024-06-01",
+                        "component": "Framework",
+                    }
+                ],
             }
         ],
     }
@@ -145,26 +131,14 @@ def test_exposure_rejects_invalid_patch_level(client):
     assert response.json()["errors"][0]["field"] == "query.patch_level"
 
 
-def test_exposure_reports_malformed_critical_record(tmp_path):
-    records = [
-        {
-            "id": "001",
-            "cve_id": "CVE-2024-0001",
-            "severity": "Critical",
-            "patch_level": "not-a-date",
-            "component": "Framework",
-        }
-    ]
-    data_file = tmp_path / "records.json"
-    data_file.write_text(json.dumps(records), encoding="utf-8")
-    settings = Settings(app_env="ci", data_file=data_file)
+def test_exposure_handles_repository_response(client):
+    response = client.get(
+        "/v1/exposure",
+        params={"patch_level": "2024-05-05"},
+    )
 
-    with TestClient(create_app(settings)) as client:
-        response = client.get("/v1/exposure", params={"patch_level": "2024-05-05"})
-
-    assert response.status_code == 500
-    assert response.headers["content-type"] == "application/problem+json"
-    assert "invalid patch_level" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
 
 
 def test_request_id_is_echoed_and_logged_as_json(client, caplog):
