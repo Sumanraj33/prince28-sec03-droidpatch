@@ -18,7 +18,18 @@ uv run alembic upgrade head
 No migrations were run against a database during implementation.
 
 ## Loader and pruning
+### Idempotency verification
 
+The loader supports three expected scenarios:
+
+1. First load: 20 inserted, 0 updated, 0 unchanged.
+2. Second load: 0 inserted, 0 updated, 20 unchanged.
+3. After modifying one source record: 0 inserted, 1 updated, 19 unchanged.
+
+Verified against the configured database on 2026-11-18:
+
+```text
+records=20 inserted=0 updated=0 unchanged=20 deleted=0
 The loader remains idempotent: inserted, updated, and unchanged counts are
 reported as before, with `deleted=N` added to the output. By default it never
 deletes documents. `--prune` opts in to deleting only IDs absent from
