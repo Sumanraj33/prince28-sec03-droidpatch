@@ -1,11 +1,12 @@
 """Load sample records into PostgreSQL using an idempotent upsert."""
 
+import argparse
 import asyncio
 import hashlib
 import json
 from datetime import date
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from droidpatch.config import get_settings
 from droidpatch.db.database import SessionLocal, engine
@@ -20,6 +21,7 @@ KNOWN = {
     "licence",
     "doc_type",
     "published_on",
+    "bulletin_month",
 }
 
 
@@ -43,20 +45,23 @@ def to_row(record: dict) -> dict:
         "licence": record.get("licence"),
         "doc_type": record.get("doc_type") or "record",
         "published_on": date.fromisoformat(published) if published else None,
+        "bulletin_month": record.get("bulletin_month"),
         "sha256": fingerprint(record),
         "metadata_": {key: value for key, value in record.items() if key not in KNOWN},
     }
 
 
-async def main() -> None:
+async def main(*, prune: bool = False) -> None:
     settings = get_settings()
     records = json.loads(settings.data_file.read_text(encoding="utf-8"))
 
     inserted = updated = unchanged = 0
+    deleted = 0
 
     async with SessionLocal() as session, session.begin():
         result = await session.execute(select(Document.external_id, Document.sha256))
         existing = dict(result.all())
+        record_ids = {str(record["id"]) for record in records}
 
         for record in records:
             row = to_row(record)
@@ -76,10 +81,28 @@ async def main() -> None:
             else:
                 unchanged += 1
 
+        if prune:
+            stale_ids = existing.keys() - record_ids
+            if stale_ids:
+                result = await session.execute(
+                    delete(Document).where(Document.external_id.in_(stale_ids))
+                )
+                deleted = result.rowcount or 0
+
     await engine.dispose()
 
-    print(f"records={len(records)} inserted={inserted} updated={updated} unchanged={unchanged}")
+    print(
+        f"records={len(records)} inserted={inserted} updated={updated} "
+        f"unchanged={unchanged} deleted={deleted}"
+    )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="delete database documents whose IDs are absent from the sample data file",
+    )
+    arguments = parser.parse_args()
+    asyncio.run(main(prune=arguments.prune))

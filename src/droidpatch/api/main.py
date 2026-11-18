@@ -26,6 +26,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         """Manage database engine lifecycle."""
         logger.info("DroidPatch API starting")
+        logger.info(
+            "database_pool_status",
+            extra={"pool_status": engine.pool.status()},
+        )
         yield
         await engine.dispose()
         logger.info("DroidPatch API stopped")
