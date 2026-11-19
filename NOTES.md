@@ -131,3 +131,14 @@ first record severity set to `High`.
 The initial insertion scenario was not separately tested against the
 configured database because it already contained the 20 sample records.
 The prune command was not run.
+
+## D04 · Docker, Compose and tests
+
+### Breaking the database on purpose
+
+db stopped:  /health -> {"status":"ok"}
+db stopped:  /ready  -> {"status":"not ready","checks":{"database":false}}
+db started:  /ready  -> {"status":"ready","checks":{"database":true}}
+
+Why should a load balancer stop sending traffic here but not restart the app?
+The API is still alive (/health is ok), so restarting it will not fix a stopped database. Traffic should stop because the database is down (/ready is false), and once the database starts, /ready recovers automatically.
