@@ -9,7 +9,7 @@ from sqlalchemy.sql.selectable import Select
 
 
 def _load_script(name):
-    path = Path(__file__).parents[1] / "scripts" / f"{name}.py"
+    path = Path(__file__).parents[2] / "scripts" / f"{name}.py"
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Unable to load script at {path}")
