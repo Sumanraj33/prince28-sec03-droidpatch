@@ -2,7 +2,7 @@ import asyncio
 import importlib.util
 from pathlib import Path
 
-path = Path(__file__).parents[1] / "scripts" / "measure_pool.py"
+path = Path(__file__).parents[2] / "scripts" / "measure_pool.py"
 spec = importlib.util.spec_from_file_location("measure_pool", path)
 if spec is None or spec.loader is None:
     raise ImportError(f"Unable to load script at {path}")

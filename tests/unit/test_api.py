@@ -98,7 +98,7 @@ def test_out_of_range_limits_are_422(client, limit):
 
 
 def test_real_sample_records_meet_seed_data_requirements():
-    data_file = Path(__file__).parents[1] / "data" / "sample_records.json"
+    data_file = Path(__file__).parents[2] / "data" / "sample_records.json"
     records = json.loads(data_file.read_text(encoding="utf-8"))
     record_ids = [record["id"] for record in records]
     cve_ids = [record["cve_id"] for record in records]
