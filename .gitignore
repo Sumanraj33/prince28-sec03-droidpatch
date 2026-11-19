@@ -18,3 +18,7 @@ data/raw/
 # Test and coverage output
 .coverage
 htmlcov/
+
+# Test and coverage output
+.coverage
+htmlcov/
