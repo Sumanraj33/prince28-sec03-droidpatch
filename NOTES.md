@@ -154,6 +154,7 @@ uid=999(app) gid=999(app) groups=999(app)
 - Size: ~230 MB (target: under 400 MB)
 - First build: ~17s in Compose / multi-stage build. After changing one line of code: a few seconds.
 - Which step said CACHED, and why? Dependency and base/user setup layers stayed cached until code or lockfile layers changed.
+- Largest `docker history droidpatch:dev` layer: 109 MB for `COPY --from=builder /app/.venv /app/.venv`, which packages the production virtual environment and installed runtime dependencies.
 
 ### The stack
 
@@ -165,6 +166,8 @@ droidpatch-redis-1     redis:7-alpine           "docker-entrypoint.s…"   redis
 records=20 inserted=20 updated=0 unchanged=0
 records=20 inserted=0 updated=0 unchanged=20
 
+- Production-image Neon check: `/ready` returned `{"status":"ready","checks":{"database":true}}`.
+
 ### Breaking the database on purpose
 
 db stopped:  /health -> {"status":"ok",...}
@@ -174,12 +177,16 @@ db started:  /ready  -> {"status":"ready","checks":{"database":true}}
 Why should a load balancer stop sending traffic here but not restart the app?
 The API process itself is still alive (/health is ok), but it cannot serve database-backed traffic until Postgres recovers. Restarting the container would not fix a stopped database and would drop in-flight traffic.
 
+- Added `restart: true` to `api.depends_on.db`; `docker compose restart db` restarted the API (its start timestamp changed). Both services returned healthy, and `/ready` returned `{"status":"ready","checks":{"database":true}}`.
+
 ### Tests and coverage
 
 uv run poe test              -> 26 passed in 3.63s
 uv run poe test-integration  -> 7 passed in 5.38s
 coverage TOTAL, unit only    -> 81%
 coverage TOTAL, with integration tests -> 78% (2 logging caplog assertions in test_api.py when run after integration)
+
+After adding a repository exposure edge-case test, 27 unit tests passed and unit coverage reached 88%. The test exercises missing/malformed patch dates and a patch level that is not later than the requested level. `poe lint`, `pre-commit run --all-files`, and the final `poe test` passed.
 
 Two files or lines my coverage report says are never run, and whether they matter:
 src/droidpatch/db/repository.py and src/droidpatch/api/routes/documents.py have uncovered error/edge branches that matter for resilience and should be covered in future tests.
