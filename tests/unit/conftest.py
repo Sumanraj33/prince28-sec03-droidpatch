@@ -105,6 +105,9 @@ def client(caplog):
     logging.getLogger().disabled = False
     logging.getLogger("droidpatch").disabled = False
     app = create_app(Settings(app_env="ci"))
+    root_logger = logging.getLogger()
+    if caplog.handler not in root_logger.handlers:
+        root_logger.addHandler(caplog.handler)
     app.dependency_overrides[get_repo] = lambda: FakeRepo()
     app.dependency_overrides[check_db] = lambda: True
 
