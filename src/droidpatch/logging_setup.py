@@ -35,17 +35,17 @@ class JsonFormatter(logging.Formatter):
 
 
 def setup_logging(settings: Settings | None = None) -> None:
-    """Initialize a single JSON logging handler on the root logger."""
+    """Initialize JSON logging on the root logger without breaking pytest caplog."""
     settings = settings or Settings()
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
 
-    if not root_logger.handlers:
+    stream_handlers = [h for h in root_logger.handlers if type(h) is logging.StreamHandler]
+    if not stream_handlers:
         handler = logging.StreamHandler()
         handler.setFormatter(JsonFormatter())
         root_logger.addHandler(handler)
     else:
-        handler = root_logger.handlers[0]
-        handler.setFormatter(JsonFormatter())
+        stream_handlers[0].setFormatter(JsonFormatter())
 
-    root_logger.propagate = False
+    root_logger.propagate = True
