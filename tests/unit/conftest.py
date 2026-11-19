@@ -102,6 +102,7 @@ class FakeRepo:
 @pytest.fixture
 def client(caplog):
     caplog.set_level(logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
     logging.getLogger().disabled = False
     logging.getLogger("droidpatch").disabled = False
     app = create_app(Settings(app_env="ci"))
