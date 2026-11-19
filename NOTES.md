@@ -111,3 +111,23 @@ metadata @> '{"bulletin_month": "2024-05"}'::jsonb
 This confirms that the GIN index is available and can be used for JSONB
 containment queries. The forced-index plan is verification, not proof that
 the index is faster for this small dataset.
+
+## Additional loader verification (2026-11-19)
+
+The loader was tested against the configured database:
+
+- Second load without changes:
+  `records=20 inserted=0 updated=0 unchanged=20 deleted=0`
+- After changing record `001` severity from `High` to `Critical`:
+  `records=20 inserted=0 updated=1 unchanged=19 deleted=0`
+- After restoring the JSON file and syncing the database:
+  `records=20 inserted=0 updated=1 unchanged=19 deleted=0`
+- Subsequent load without changes:
+  `records=20 inserted=0 updated=0 unchanged=20 deleted=0`
+
+The JSON file was restored and verified to contain 20 records, with the
+first record severity set to `High`.
+
+The initial insertion scenario was not separately tested against the
+configured database because it already contained the 20 sample records.
+The prune command was not run.
