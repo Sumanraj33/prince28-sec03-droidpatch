@@ -9,31 +9,35 @@ JSONB, and add the `ix_documents_metadata_gin` index. Migration 3 adds nullable
 `ix_documents_bulletin_month`. The original migrations and JSONB data are
 preserved.
 
-Review migration 3, then apply it to the intended database explicitly:
+Apply migrations to the intended database explicitly:
 
 ```powershell
 uv run alembic upgrade head
 ```
 
-No migrations were run against a database during implementation.
+The migration history and current revision were verified. Migration 3 was
+also tested by downgrading one revision and upgrading back to head.
 
 ## Loader and pruning
+
 ### Idempotency verification
 
-The loader supports three expected scenarios:
+The loader supports these expected scenarios:
 
 1. First load: 20 inserted, 0 updated, 0 unchanged.
 2. Second load: 0 inserted, 0 updated, 20 unchanged.
 3. After modifying one source record: 0 inserted, 1 updated, 19 unchanged.
 
-Verified against the configured database on 2026-11-18:
+The following second-load result was verified against the configured database
+on 2026-11-18:
 
 ```text
 records=20 inserted=0 updated=0 unchanged=20 deleted=0
-The loader remains idempotent: inserted, updated, and unchanged counts are
-reported as before, with `deleted=N` added to the output. By default it never
-deletes documents. `--prune` opts in to deleting only IDs absent from
-`data/sample_records.json`.
+```
+
+The loader reports inserted, updated, and unchanged counts, with `deleted=N`
+added to the output. By default it never deletes documents. `--prune` opts in
+to deleting only IDs absent from `data/sample_records.json`.
 
 ```powershell
 uv run python scripts/load_db.py
@@ -77,7 +81,33 @@ connections. `Pool size` is the base capacity; `Connections in pool` counts
 idle pooled connections; `Current Checked out connections` should return to 0
 after the sequential requests finish. `Current Overflow` is the number of
 connections above the base size, so a negative number means there are unused
-base-pool slots (for example, -4 means one connection occupies a five-slot
-pool). In this run one connection remained idle in the pool and none were
-checked out after the requests. Counts vary with database availability and
-prior use.
+base-pool slots. In this run one connection remained idle in the pool and
+none were checked out after the requests. Counts vary with database
+availability and prior use.
+
+## GIN index EXPLAIN evidence
+
+Ran:
+
+```powershell
+uv run python scripts/explain.py bulletin_month 2024-05
+```
+
+The normal query plan used a sequential scan because the sample table
+contains only 20 records.
+
+With sequential scans disabled, PostgreSQL used:
+
+- Bitmap Heap Scan
+- Bitmap Index Scan
+- Index: `ix_documents_metadata_gin`
+
+The index condition was:
+
+```sql
+metadata @> '{"bulletin_month": "2024-05"}'::jsonb
+```
+
+This confirms that the GIN index is available and can be used for JSONB
+containment queries. The forced-index plan is verification, not proof that
+the index is faster for this small dataset.
