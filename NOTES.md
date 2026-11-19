@@ -142,3 +142,44 @@ db started:  /ready  -> {"status":"ready","checks":{"database":true}}
 
 Why should a load balancer stop sending traffic here but not restart the app?
 The API is still alive (/health is ok), so restarting it will not fix a stopped database. Traffic should stop because the database is down (/ready is false), and once the database starts, /ready recovers automatically.
+
+## D04 · Docker, Compose and tests
+
+### The image
+
+REPOSITORY       TAG       IMAGE ID       CREATED        SIZE
+droidpatch:dev   latest    ...            ...            ~230 MB
+uid=999(app) gid=999(app) groups=999(app)
+
+- Size: ~230 MB (target: under 400 MB)
+- First build: ~17s in Compose / multi-stage build. After changing one line of code: a few seconds.
+- Which step said CACHED, and why? Dependency and base/user setup layers stayed cached until code or lockfile layers changed.
+
+### The stack
+
+NAME                   IMAGE                    COMMAND                  SERVICE   CREATED          STATUS          PORTS
+droidpatch-api-1       droidpatch-api           "sh -c 'exec uvicorn…"   api       10 seconds ago   Up (healthy)    0.0.0.0:8000->8000/tcp
+droidpatch-db-1        pgvector/pgvector:pg17   "docker-entrypoint.s…"   db        11 seconds ago   Up (healthy)    0.0.0.0:5433->5432/tcp
+droidpatch-migrate-1   droidpatch-migrate       "sh -c 'alembic upgr…"   migrate   10 seconds ago   Exited (0)
+droidpatch-redis-1     redis:7-alpine           "docker-entrypoint.s…"   redis     11 seconds ago   Up (healthy)    0.0.0.0:6379->6379/tcp
+records=20 inserted=20 updated=0 unchanged=0
+records=20 inserted=0 updated=0 unchanged=20
+
+### Breaking the database on purpose
+
+db stopped:  /health -> {"status":"ok",...}
+db stopped:  /ready  -> {"status":"not_ready","checks":{"database":false}}
+db started:  /ready  -> {"status":"ready","checks":{"database":true}}
+
+Why should a load balancer stop sending traffic here but not restart the app?
+The API process itself is still alive (/health is ok), but it cannot serve database-backed traffic until Postgres recovers. Restarting the container would not fix a stopped database and would drop in-flight traffic.
+
+### Tests and coverage
+
+uv run poe test              -> 26 passed in 3.63s
+uv run poe test-integration  -> 7 passed in 5.38s
+coverage TOTAL, unit only    -> 81%
+coverage TOTAL, with integration tests -> 78% (2 logging caplog assertions in test_api.py when run after integration)
+
+Two files or lines my coverage report says are never run, and whether they matter:
+src/droidpatch/db/repository.py and src/droidpatch/api/routes/documents.py have uncovered error/edge branches that matter for resilience and should be covered in future tests.
