@@ -1,10 +1,12 @@
 import json
+import logging
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from droidpatch.api.deps import check_db, get_repo
 from droidpatch.api.main import create_app
 from droidpatch.config import Settings
 from droidpatch.logging_setup import JsonFormatter
@@ -30,9 +32,7 @@ def test_ready_when_database_connected(client):
 
 
 def test_ready_is_503_when_database_is_down():
-    from droidpatch.api.deps import check_db
-
-    app = create_app(Settings(app_env="ci"))
+    app = create_app(Settings(app_env="ci", _env_file=None))
 
     async def database_down():
         return False
@@ -115,11 +115,20 @@ def test_real_sample_records_meet_seed_data_requirements():
     assert len(cve_ids) == len(set(cve_ids))
     assert all(record["updated_aosp_versions"] for record in records)
 
-    settings = Settings(app_env="ci", data_file=data_file)
-    with TestClient(create_app(settings)) as client:
-        assert client.get("/ready").status_code == 200
-        response = client.get("/v1/documents")
+    class SeedRepo:
+        async def list(self, *, q, filters, limit, offset, sort=None):
+            return len(records), records[offset : offset + limit]
 
+    settings = Settings(app_env="ci", data_file=data_file, _env_file=None)
+    app = create_app(settings)
+    app.dependency_overrides[check_db] = lambda: True
+    app.dependency_overrides[get_repo] = lambda: SeedRepo()
+
+    with TestClient(app) as c:
+        assert c.get("/ready").status_code == 200
+        response = c.get("/v1/documents")
+
+    app.dependency_overrides.clear()
     assert response.status_code == 200
     assert response.json()["total"] == len(records)
 
@@ -170,6 +179,11 @@ def test_exposure_handles_repository_response(client):
 
 
 def test_request_id_is_echoed_and_logged_as_json(client, caplog):
+    caplog.set_level(logging.INFO)
+    root_logger = logging.getLogger()
+    if caplog.handler not in root_logger.handlers:
+        root_logger.addHandler(caplog.handler)
+
     r = client.get("/health", headers={"X-Request-ID": "abc123"})
     assert r.headers["X-Request-ID"] == "abc123"
 
@@ -181,12 +195,26 @@ def test_request_id_is_echoed_and_logged_as_json(client, caplog):
     assert json.loads(log_line)["request_id"] == "abc123"
 
 
-def test_startup_logs_database_pool_status(client, caplog):
-    pool_log = next(
-        record
-        for record in caplog.get_records("setup")
-        if record.getMessage() == "database_pool_status"
-    )
+def test_startup_logs_database_pool_status(caplog):
+    caplog.set_level(logging.INFO)
+    records = []
+
+    class ListHandler(logging.Handler):
+        def emit(self, record):
+            records.append(record)
+
+    handler = ListHandler()
+    logging.getLogger().addHandler(handler)
+    try:
+        app = create_app(Settings(app_env="ci", _env_file=None))
+        app.dependency_overrides[check_db] = lambda: True
+        logging.getLogger().addHandler(handler)
+        with TestClient(app):
+            pass
+    finally:
+        logging.getLogger().removeHandler(handler)
+
+    pool_log = next(record for record in records if record.getMessage() == "database_pool_status")
 
     assert "Pool size:" in pool_log.pool_status
     assert "Current Checked out connections:" in pool_log.pool_status
