@@ -1,4 +1,4 @@
-﻿# CI: every pull request and every push to main.
+# CI: every pull request and every push to main.
 # lint -> unit + integration tests (real Postgres) -> build the image -> push it (main only)
 name: CI
 
@@ -62,7 +62,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name == 'push' }}  # PRs only prove the image builds
