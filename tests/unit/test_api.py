@@ -179,6 +179,11 @@ def test_exposure_handles_repository_response(client):
 
 
 def test_request_id_is_echoed_and_logged_as_json(client, caplog):
+    for name in ("", "droidpatch", "droidpatch.api.middleware"):
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.INFO)
+        logger.disabled = False
+        logger.propagate = True
     caplog.set_level(logging.INFO)
     root_logger = logging.getLogger()
     if caplog.handler not in root_logger.handlers:
@@ -195,8 +200,7 @@ def test_request_id_is_echoed_and_logged_as_json(client, caplog):
     assert json.loads(log_line)["request_id"] == "abc123"
 
 
-def test_startup_logs_database_pool_status(caplog):
-    caplog.set_level(logging.INFO)
+def test_startup_logs_database_pool_status():
     records = []
 
     class ListHandler(logging.Handler):
@@ -204,11 +208,15 @@ def test_startup_logs_database_pool_status(caplog):
             records.append(record)
 
     handler = ListHandler()
+    app = create_app(Settings(app_env="ci", _env_file=None))
+    app.dependency_overrides[check_db] = lambda: True
+    for name in ("", "droidpatch", "droidpatch.api.main"):
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.INFO)
+        logger.disabled = False
+        logger.propagate = True
     logging.getLogger().addHandler(handler)
     try:
-        app = create_app(Settings(app_env="ci", _env_file=None))
-        app.dependency_overrides[check_db] = lambda: True
-        logging.getLogger().addHandler(handler)
         with TestClient(app):
             pass
     finally:
