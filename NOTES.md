@@ -190,3 +190,35 @@ After adding a repository exposure edge-case test, 27 unit tests passed and unit
 
 Two files or lines my coverage report says are never run, and whether they matter:
 src/droidpatch/db/repository.py and src/droidpatch/api/routes/documents.py have uncovered error/edge branches that matter for resilience and should be covered in future tests.
+
+## D05 ? CI/CD and going live
+
+- Live URL: [https://droidpatch.onrender.com](https://droidpatch.onrender.com)
+- CI run for pull request 1: [https://github.com/Sumanraj33/prince28-sec03-droidpatch/actions/runs/44755162413](https://github.com/Sumanraj33/prince28-sec03-droidpatch/actions/runs/44755162413)
+- First deploy that ran by itself: [https://github.com/Sumanraj33/prince28-sec03-droidpatch/actions/runs/44773661245](https://github.com/Sumanraj33/prince28-sec03-droidpatch/actions/runs/44773661245)
+- Merge clicked at 21:57 -> "Smoke test passed" at 21:59 -> lead time: 2 min
+
+### Smoke test output from that CD run
+
+```text
+ok   /health -> 200, version 54e2734f129584176230c0d4fe0a73fbd5ad11fa
+ok   /ready -> 200 {"status": "ready", "checks": {"database": True}}
+ok   /v1/documents?limit=1 -> 200
+Smoke test passed
+```
+
+### Rollback drill
+
+- Rolled back to sha 99689bc51b4dbebfa2441ccbf6950172ff2cba38 : started 22:14, smoke passed 22:15 (1 min)
+- Rolled forward to sha 54e2734f129584176230c0d4fe0a73fbd5ad11fa : 1 min
+- During the rollback, the database stayed on the newer schema. Why is that safe here? Because migrations follow expand/contract backward-compatibility rules?the older app code only reads columns and tables that still exist on the newer Neon schema without breaking.
+
+### Where my secrets live
+
+- Neon string: GitHub Secret DATABASE_URL + Render environment. Not in Git, not in the image.
+- Render deploy hook: GitHub Secret RENDER_DEPLOY_HOOK only.
+
+### Monitoring
+
+- UptimeRobot checks /health every 5 minutes; alerts go to my email.
+- One thing that would make my live app faster on its first request: Upgrading Render from the Free instance tier (which spins down after 15 minutes of inactivity) to a paid always-on instance so there is no cold start.
