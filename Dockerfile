@@ -31,9 +31,14 @@ COPY --chown=app:app alembic.ini ./
 COPY --chown=app:app migrations ./migrations
 COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app data ./data
-COPY --chown=app:app src ./src
 
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+
+# CI passes the commit SHA, so /health can say exactly which version is live.
+# It comes last: a new SHA rebuilds only this tiny layer.
+ARG GIT_SHA=dev
+ENV GIT_SHA=${GIT_SHA}
+
 USER app
 EXPOSE 8000
 
