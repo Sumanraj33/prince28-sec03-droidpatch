@@ -222,3 +222,15 @@ Smoke test passed
 
 - UptimeRobot checks /health every 5 minutes; alerts go to my email.
 - One thing that would make my live app faster on its first request: Upgrading Render from the Free instance tier (which spins down after 15 minutes of inactivity) to a paid always-on instance so there is no cold start.
+
+## D05 ? Stretch tasks
+
+### Human gate (required reviewer on production)
+
+- Worth the delay when deploying irreversible schema changes, high-risk production hotfixes, or releases during peak traffic windows where human sign-off prevents bad rollouts.
+- For routine low-risk changes covered by automated tests, migrations, and smoke checks, auto-deploy keeps feedback fast.
+
+### Lead time & slowest step (DORA metric)
+
+- Observed CD run durations on GitHub Actions: CD #3 (48s), CD #4 (55s), CD #5 (49s), and CD #6 (55s), with PR #7 merge-to-smoke lead time recorded at ~2 min.
+- Slowest step: Waiting for Render to pull the new SHA image, start the container, and pass /health and /ready during the smoke test (compared to setup/migration/hook steps).
