@@ -1,17 +1,25 @@
 """Health and readiness endpoints."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from droidpatch.api.deps import check_db
+from droidpatch.config import Settings, get_settings
 
 router = APIRouter()
 
 
 @router.get("/health")
-def health() -> dict[str, str]:
+def health(settings: Annotated[Settings, Depends(get_settings)]) -> dict[str, str]:
     """Liveness check: the application process is running."""
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "app": settings.app_name,
+        "env": settings.app_env,
+        "version": settings.git_sha,
+    }
 
 
 @router.get("/ready")
