@@ -1,5 +1,11 @@
 ﻿# DroidPatch
 
+[![CI](https://github.com/Sumanraj33/prince28-sec03-droidpatch/actions/workflows/ci.yml/badge.svg)](https://github.com/Sumanraj33/prince28-sec03-droidpatch/actions/workflows/ci.yml)
+[![Live](https://img.shields.io/website?url=https%3A%2F%2Fdroidpatch.onrender.com%2Fhealth&label=live)](https://droidpatch.onrender.com/docs)
+[![Uptime (30 days)](https://img.shields.io/uptimerobot/ratio/m804751054-be0d27111fd193f2b07d7f85)](https://droidpatch.onrender.com/health)
+
+**Live:** [https://droidpatch.onrender.com](https://droidpatch.onrender.com) ? [API docs](https://droidpatch.onrender.com/docs) ? [health](https://droidpatch.onrender.com/health)
+
 Answers which Android security bulletin fixed a CVE, which patch level covers it, and what an unpatched phone is exposed to.
 
 ## Status
