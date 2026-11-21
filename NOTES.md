@@ -1,6 +1,8 @@
-# DroidPatch engineering notes
+﻿# DroidPatch engineering notes
 
-## PostgreSQL
+## D03 · PostgreSQL
+
+### PostgreSQL
 
 Migrations 1 and 2 create `documents` and `pages`, store additional fields in
 JSONB, and add the `ix_documents_metadata_gin` index. Migration 3 adds nullable
