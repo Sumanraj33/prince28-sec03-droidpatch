@@ -236,3 +236,37 @@ Smoke test passed
 
 - Observed CD run durations on GitHub Actions: CD #3 (48s), CD #4 (55s), CD #5 (49s), and CD #6 (55s), with PR #7 merge-to-smoke lead time recorded at ~2 min.
 - Slowest step: Waiting for Render to pull the new SHA image, start the container, and pass /health and /ready during the smoke test (compared to setup/migration/hook steps).
+
+## D06 · Collecting the corpus
+
+- Start target: 24 monthly bulletins (2 years)
+- Collected today: 10 files, 40 pages, ~1.8 MB (from DATASET.md)
+- Doors used: URL list (`scripts/fetch.py urls`)
+
+### Licence check
+
+| Source | Licence or terms, in my words | May I show full text in answers? |
+|---|---|---|
+| android-bulletin | Android documentation content is CC BY 4.0 (code samples Apache-2.0) | Yes, with attribution and link to the source bulletin |
+| pixel-bulletin | Android documentation content is CC BY 4.0 (code samples Apache-2.0) | Yes, with attribution and link to the source bulletin |
+
+### robots.txt
+
+- Site: https://source.android.com/robots.txt . Its robots.txt allows public documentation paths for bots without blocking our bulletin URLs.
+- Was anything blocked for my bot? No (`blocked=0`) across the fetched bulletins.
+
+### Kill and resume
+
+- Run 1: Tested `--delay 3` and `--delay 6` runs; interrupted runs resume cleanly from `data/manifest.jsonl` without leaving `.part` files behind.
+- Run 2: Skips already-downloaded files on disk and fetches only remaining or deleted files.
+- Run 3: `downloaded=0` once all sources are present on disk.
+
+### Capacity (from docs/CAPACITY.md)
+
+- Tokens per page, measured: ~750 tokens/page (estimated via `chars / 4` at ~3,000 chars/page)
+- Full corpus: See generated table in `docs/CAPACITY.md` (scaled to 120 files)
+- The number that surprised me most, and why (2 lines): The one-time embedding cost and Postgres storage for 120 bulletins are very small, while token count per page (`chars / 4`) is still an estimate until we tokenize parsed text on Day 8.
+
+### One thing that went wrong today, and how I fixed it
+
+- Windows PowerShell `-Encoding utf8` added a UTF-8 BOM that `ruff format --check` flagged, and initial `2026-...` bulletin URLs returned HTTP 404; running `uv run ruff format .` and updating `data/sources.csv` with published bulletin URLs fixed both.

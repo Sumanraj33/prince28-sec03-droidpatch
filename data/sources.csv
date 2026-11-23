@@ -1,0 +1,17 @@
+﻿# Sources for DroidPatch. One row per file to download. Lines starting with # are notes.
+# Start target: 24 monthly bulletins (2 years)
+# Where to look:
+#   https://source.android.com/docs/security/bulletin
+#   https://source.android.com/docs/security/bulletin/pixel
+# Terms on my project card: Android documentation content is CC BY 4.0 (code samples Apache-2.0).
+url,source,licence,title
+https://source.android.com/docs/security/bulletin/2025-03-01,android-bulletin,"CC BY 4.0",Android Security Bulletin - March 2025
+https://source.android.com/docs/security/bulletin/2025-02-01,android-bulletin,"CC BY 4.0",Android Security Bulletin - February 2025
+https://source.android.com/docs/security/bulletin/2025-01-01,android-bulletin,"CC BY 4.0",Android Security Bulletin - January 2025
+https://source.android.com/docs/security/bulletin/2024-12-01,android-bulletin,"CC BY 4.0",Android Security Bulletin - December 2024
+https://source.android.com/docs/security/bulletin/2024-11-01,android-bulletin,"CC BY 4.0",Android Security Bulletin - November 2024
+https://source.android.com/docs/security/bulletin/pixel/2025-03-01,pixel-bulletin,"CC BY 4.0",Pixel Update Bulletin - March 2025
+https://source.android.com/docs/security/bulletin/pixel/2025-02-01,pixel-bulletin,"CC BY 4.0",Pixel Update Bulletin - February 2025
+https://source.android.com/docs/security/bulletin/pixel/2025-01-01,pixel-bulletin,"CC BY 4.0",Pixel Update Bulletin - January 2025
+https://source.android.com/docs/security/bulletin/pixel/2024-12-01,pixel-bulletin,"CC BY 4.0",Pixel Update Bulletin - December 2024
+https://source.android.com/docs/security/bulletin/pixel/2024-11-01,pixel-bulletin,"CC BY 4.0",Pixel Update Bulletin - November 2024
