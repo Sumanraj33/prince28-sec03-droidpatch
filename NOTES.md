@@ -1,6 +1,6 @@
-﻿# DroidPatch engineering notes
+# DroidPatch engineering notes
 
-## D03 · PostgreSQL
+## D03 � PostgreSQL
 
 ### PostgreSQL
 
@@ -134,7 +134,7 @@ The initial insertion scenario was not separately tested against the
 configured database because it already contained the 20 sample records.
 The prune command was not run.
 
-## D04 · Docker, Compose and tests
+## D04 � Docker, Compose and tests
 
 ### Breaking the database on purpose
 
@@ -145,7 +145,7 @@ db started:  /ready  -> {"status":"ready","checks":{"database":true}}
 Why should a load balancer stop sending traffic here but not restart the app?
 The API is still alive (/health is ok), so restarting it will not fix a stopped database. Traffic should stop because the database is down (/ready is false), and once the database starts, /ready recovers automatically.
 
-## D04 · Docker, Compose and tests
+## D04 � Docker, Compose and tests
 
 ### The image
 
@@ -161,10 +161,10 @@ uid=999(app) gid=999(app) groups=999(app)
 ### The stack
 
 NAME                   IMAGE                    COMMAND                  SERVICE   CREATED          STATUS          PORTS
-droidpatch-api-1       droidpatch-api           "sh -c 'exec uvicorn…"   api       10 seconds ago   Up (healthy)    0.0.0.0:8000->8000/tcp
-droidpatch-db-1        pgvector/pgvector:pg17   "docker-entrypoint.s…"   db        11 seconds ago   Up (healthy)    0.0.0.0:5433->5432/tcp
-droidpatch-migrate-1   droidpatch-migrate       "sh -c 'alembic upgr…"   migrate   10 seconds ago   Exited (0)
-droidpatch-redis-1     redis:7-alpine           "docker-entrypoint.s…"   redis     11 seconds ago   Up (healthy)    0.0.0.0:6379->6379/tcp
+droidpatch-api-1       droidpatch-api           "sh -c 'exec uvicorn�"   api       10 seconds ago   Up (healthy)    0.0.0.0:8000->8000/tcp
+droidpatch-db-1        pgvector/pgvector:pg17   "docker-entrypoint.s�"   db        11 seconds ago   Up (healthy)    0.0.0.0:5433->5432/tcp
+droidpatch-migrate-1   droidpatch-migrate       "sh -c 'alembic upgr�"   migrate   10 seconds ago   Exited (0)
+droidpatch-redis-1     redis:7-alpine           "docker-entrypoint.s�"   redis     11 seconds ago   Up (healthy)    0.0.0.0:6379->6379/tcp
 records=20 inserted=20 updated=0 unchanged=0
 records=20 inserted=0 updated=0 unchanged=20
 
@@ -237,11 +237,11 @@ Smoke test passed
 - Observed CD run durations on GitHub Actions: CD #3 (48s), CD #4 (55s), CD #5 (49s), and CD #6 (55s), with PR #7 merge-to-smoke lead time recorded at ~2 min.
 - Slowest step: Waiting for Render to pull the new SHA image, start the container, and pass /health and /ready during the smoke test (compared to setup/migration/hook steps).
 
-## D06 · Collecting the corpus
+## D06 � Collecting the corpus
 
 - Start target: 24 monthly bulletins (2 years)
-- Collected today: 10 files, 40 pages, ~1.8 MB (from DATASET.md)
-- Doors used: URL list (`scripts/fetch.py urls`)
+- Collected today: 24 files, 98 pages, 4.6 MB (from DATASET.md)
+- Doors used: URL list (scripts/fetch.py urls)
 
 ### Licence check
 
@@ -253,20 +253,54 @@ Smoke test passed
 ### robots.txt
 
 - Site: https://source.android.com/robots.txt . Its robots.txt allows public documentation paths for bots without blocking our bulletin URLs.
-- Was anything blocked for my bot? No (`blocked=0`) across the fetched bulletins.
+- Was anything blocked for my bot? No (locked=0) across all 24 fetched bulletins.
 
 ### Kill and resume
 
-- Run 1: Tested `--delay 3` and `--delay 6` runs; interrupted runs resume cleanly from `data/manifest.jsonl` without leaving `.part` files behind.
-- Run 2: Skips already-downloaded files on disk and fetches only remaining or deleted files.
-- Run 3: `downloaded=0` once all sources are present on disk.
+- Run 1: Ran scripts/fetch.py urls --delay 3 across 24 sources (downloaded=24 skipped=0 blocked=0 failed=0, 70.9s), with interrupted runs resuming cleanly from data/manifest.jsonl and leaving zero .part files.
+- Run 2: downloaded=0 skipped=24 (locked=0 failed=0, 0.2s)
+- Run 3: downloaded=0 skipped=24 (locked=0 failed=0, 0.1s)
 
 ### Capacity (from docs/CAPACITY.md)
 
-- Tokens per page, measured: ~750 tokens/page (estimated via `chars / 4` at ~3,000 chars/page)
-- Full corpus: See generated table in `docs/CAPACITY.md` (scaled to 120 files)
-- The number that surprised me most, and why (2 lines): The one-time embedding cost and Postgres storage for 120 bulletins are very small, while token count per page (`chars / 4`) is still an estimate until we tokenize parsed text on Day 8.
+- Tokens per page, measured: 750 (73,213 estimated tokens across 98 pages / 292,853 chars)
+- Full corpus: 0.37 M tokens, 1,052 chunks, embedding about Rs 6 (.06), vectors 3 MB (and 2 MB text in Postgres for 120 files)
+- The number that surprised me most, and why (2 lines): Even scaled to 120 bulletins (0.37 M tokens), embedding cost (~Rs 6) and vector storage (3 MB) are tiny, while token count per page (750 via chars / 4) remains an estimate until real tokenization on Day 8.
 
 ### One thing that went wrong today, and how I fixed it
 
-- Windows PowerShell `-Encoding utf8` added a UTF-8 BOM that `ruff format --check` flagged, and initial `2026-...` bulletin URLs returned HTTP 404; running `uv run ruff format .` and updating `data/sources.csv` with published bulletin URLs fixed both.
+- Windows PowerShell -Encoding utf8 added a UTF-8 BOM that uff format --check flagged, and some candidate bulletin dates returned HTTP 404; running uv run ruff format . and using published Android and Pixel bulletin URLs fixed both.
+
+## D06 · Collecting the corpus
+
+- Start target: 24 monthly bulletins (2 years)
+- Collected today: 24 files, 98 pages, 4.6 MB (from DATASET.md)
+- Doors used: URL list (scripts/fetch.py urls)
+
+### Licence check
+
+| Source | Licence or terms, in my words | May I show full text in answers? |
+|---|---|---|
+| android-bulletin | Android documentation content is CC BY 4.0 (code samples Apache-2.0) | Yes, with attribution and link to the source bulletin |
+| pixel-bulletin | Android documentation content is CC BY 4.0 (code samples Apache-2.0) | Yes, with attribution and link to the source bulletin |
+
+### robots.txt
+
+- Site: https://source.android.com/robots.txt . Its robots.txt allows public documentation paths for bots without blocking our bulletin URLs.
+- Was anything blocked for my bot? No (locked=0) across all 24 fetched bulletins.
+
+### Kill and resume
+
+- Run 1: Ran scripts/fetch.py urls --delay 3 across 24 sources (downloaded=24 skipped=0 blocked=0 failed=0, 70.9s), with interrupted runs resuming cleanly from data/manifest.jsonl and leaving zero .part files.
+- Run 2: downloaded=0 skipped=24 (locked=0 failed=0, 0.2s)
+- Run 3: downloaded=0 skipped=24 (locked=0 failed=0, 0.1s)
+
+### Capacity (from docs/CAPACITY.md)
+
+- Tokens per page, measured: 750 (73,213 estimated tokens across 98 pages / 292,853 chars)
+- Full corpus: 0.37 M tokens, 1,052 chunks, embedding about Rs 6 (.06), vectors 3 MB (and 2 MB text in Postgres for 120 files)
+- The number that surprised me most, and why (2 lines): Even scaled to 120 bulletins (0.37 M tokens), embedding cost (~Rs 6) and vector storage (3 MB) are tiny, while token count per page (750 via chars / 4) remains an estimate until real tokenization on Day 8.
+
+### One thing that went wrong today, and how I fixed it
+
+- Windows PowerShell file encoding/line endings affected uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cleanly, running uv run ruff format ., and using published Android and Pixel bulletin URLs fixed both.

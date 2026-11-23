@@ -3,15 +3,15 @@
 Full corpus target: All bulletins 2015 to now (120+ bulletins, 10,000+ CVE rows)
 
 <!-- generated:start -->
-## Measured on my start corpus (2026-11-23 10:09 UTC)
+## Measured on my start corpus (2026-11-23 15:17 UTC)
 
 | What | Value |
 |---|---|
-| Files | 10 |
-| Size on disk | 1.9 MB |
-| Pages (PDF pages + 1 per 3,000 characters of text/HTML) | 40 |
-| Characters of text | 119,710 |
-| Estimated tokens (characters / 4) | 29,928 |
+| Files | 24 |
+| Size on disk | 4.6 MB |
+| Pages (PDF pages + 1 per 3,000 characters of text/HTML) | 98 |
+| Characters of text | 292,853 |
+| Estimated tokens (characters / 4) | 73,213 |
 | Tokens per page | 750 |
 | PDFs with almost no text (scanned? OCR is Day 7) | 0 |
 | Files not measured (zip, xlsx, unreadable) | 0 |
@@ -20,10 +20,10 @@ Full corpus target: All bulletins 2015 to now (120+ bulletins, 10,000+ CVE rows)
 
 | What | How | Value |
 |---|---|---|
-| Scale factor | target / measured | x 12.0 |
-| Tokens | measured tokens x scale | 0.36 M |
+| Scale factor | target / measured | x 5.0 |
+| Tokens | measured tokens x scale | 0.37 M |
 | Raw files | measured MB x scale | 23 MB |
-| Chunks | tokens / 400 x 1.15 overlap | 1,032 |
+| Chunks | tokens / 400 x 1.15 overlap | 1,052 |
 | Embedding cost, one time | tokens x 1.15 x $0.15 per 1M | $0.06 = Rs 6 |
 | Vector storage | chunks x 768 numbers x 4 bytes | 3 MB |
 | Text in Postgres | characters x scale x 1.2 | 2 MB |
