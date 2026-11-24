@@ -312,16 +312,16 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 <!-- parsers:start -->
 | File | Parsers (A / B) | Pages | A found | B found | Time (A / B) | Better, why |
 |---|---|---|---|---|---|---|
-| 2025-04-01-5ab69331.html | trafilatura / strip tags | 5 | 13,227 chars, 14 headings, 12 tables | 17,911 chars, 0 headings, 0 tables | 0.10 s / 0.01 s | trafilatura: 12 Markdown tables & 14 headings; drops 4.7k menu/footer chars |
-| 2024-08-01-93905981.html | trafilatura / strip tags | 5 | 12,325 chars, 14 headings, 11 tables | 17,177 chars, 0 headings, 0 tables | 0.11 s / 0.01 s | trafilatura: 11 Markdown tables & 14 headings; removes 4.8k boilerplate chars |
-| 2025-05-01-3a4360d6.html | trafilatura / strip tags | 5 | 12,889 chars, 15 headings, 13 tables | 17,509 chars, 0 headings, 0 tables | 0.14 s / 0.01 s | trafilatura: 13 Markdown tables & 15 headings; 0.14s is fast for corpus |
-| 2025-02-01-98e58d5f.html | trafilatura / strip tags | 5 | 12,802 chars, 16 headings, 14 tables | 17,520 chars, 0 headings, 0 tables | 0.10 s / 0.01 s | trafilatura: 14 tables & 16 headings; strips 4.7k nav/footer chars |
-| 2024-11-01-efb7f064.html | trafilatura / strip tags | 5 | 12,452 chars, 15 headings, 13 tables | 17,254 chars, 0 headings, 0 tables | 0.09 s / 0.01 s | trafilatura: 13 Markdown tables & 15 headings vs flat stripped text |
-| 2024-09-01-00e84ebd.html | trafilatura / strip tags | 4 | 11,664 chars, 14 headings, 12 tables | 16,562 chars, 0 headings, 0 tables | 0.07 s / 0.01 s | trafilatura: 12 tables & 14 headings; drops 4.9k non-article chars |
-| 2025-03-01-2626d319.html | trafilatura / strip tags | 4 | 11,458 chars, 12 headings, 10 tables | 16,391 chars, 0 headings, 0 tables | 0.09 s / 0.01 s | trafilatura: 10 Markdown grids & 12 headings; cuts 4.9k menu/footer text |
-| 2025-01-01-88834c1f.html | trafilatura / strip tags | 4 | 11,143 chars, 12 headings, 9 tables | 16,026 chars, 0 headings, 0 tables | 0.08 s / 0.01 s | trafilatura: 9 CVE tables & 12 headings; drops 4.9k extra boilerplate chars |
-| 2024-06-01-b2aad26d.html | trafilatura / strip tags | 4 | 11,486 chars, 13 headings, 11 tables | 16,281 chars, 0 headings, 0 tables | 0.10 s / 0.01 s | trafilatura: 11 tables & 13 headings; strip-tags has 0 structure |
-| 2024-06-01-684a29db.html | trafilatura / strip tags | 3 | 6,963 chars, 8 headings, 6 tables | 12,279 chars, 0 headings, 0 tables | 0.11 s / 0.01 s | trafilatura: 6 Markdown tables & 8 headings; drops 5.3k menu/footer chars |
+| 2025-04-01-5ab69331.html | trafilatura / strip tags | 5 | 13,227 chars, 14 headings, 12 tables | 17,911 chars, 0 headings, 0 tables | 0.30 s / 0.01 s | trafilatura — extracts 14 headings and 12 Markdown CVE tables; strip-tags adds ~4.7k chars of nav/footer noise with 0 structure |
+| 2024-08-01-93905981.html | trafilatura / strip tags | 5 | 12,325 chars, 14 headings, 11 tables | 17,177 chars, 0 headings, 0 tables | 0.19 s / 0.01 s | trafilatura — preserves 14 section headings and 11 CVE tables cleanly; strip-tags collapses tables into flat word soup |
+| 2025-05-01-3a4360d6.html | trafilatura / strip tags | 5 | 12,889 chars, 15 headings, 13 tables | 17,509 chars, 0 headings, 0 tables | 0.24 s / 0.01 s | trafilatura — keeps 15 headings and 13 patch-level tables intact while stripping site chrome (~4.6k fewer noise chars) |
+| 2025-02-01-98e58d5f.html | trafilatura / strip tags | 5 | 12,802 chars, 16 headings, 14 tables | 17,520 chars, 0 headings, 0 tables | 0.20 s / 0.01 s | trafilatura — captures 16 headings and 14 CVE tables; strip-tags loses all hierarchy and table boundaries |
+| 2024-11-01-efb7f064.html | trafilatura / strip tags | 5 | 12,452 chars, 15 headings, 13 tables | 17,254 chars, 0 headings, 0 tables | 0.19 s / 0.01 s | trafilatura — retains 15 headings and 13 Markdown tables; strip-tags includes ~4.8k chars of navigation/sidebar boilerplate |
+| 2024-09-01-00e84ebd.html | trafilatura / strip tags | 4 | 11,664 chars, 14 headings, 12 tables | 16,562 chars, 0 headings, 0 tables | 0.23 s / 0.01 s | trafilatura — keeps 14 section headings and 12 vulnerability tables readable; strip-tags has 0 headings/tables |
+| 2025-03-01-2626d319.html | trafilatura / strip tags | 4 | 11,458 chars, 12 headings, 10 tables | 16,391 chars, 0 headings, 0 tables | 0.23 s / 0.01 s | trafilatura — extracts 12 headings and 10 Markdown CVE tables; strip-tags adds ~4.9k chars of page menus |
+| 2025-01-01-88834c1f.html | trafilatura / strip tags | 4 | 11,143 chars, 12 headings, 9 tables | 16,026 chars, 0 headings, 0 tables | 0.20 s / 0.00 s | trafilatura — preserves 12 headings and 9 patch tables; strip-tags outputs unstructured text with sidebar links |
+| 2024-06-01-b2aad26d.html | trafilatura / strip tags | 4 | 11,486 chars, 13 headings, 11 tables | 16,281 chars, 0 headings, 0 tables | 0.16 s / 0.01 s | trafilatura — keeps 13 headings and 11 CVE tables; strip-tags dumps ~4.8k chars of non-article HTML |
+| 2024-06-01-684a29db.html | trafilatura / strip tags | 3 | 6,963 chars, 8 headings, 6 tables | 12,279 chars, 0 headings, 0 tables | 0.32 s / 0.01 s | trafilatura — Pixel bulletin keeps 8 headings and 6 CVE tables; strip-tags nearly doubles chars with site navigation |
 <!-- parsers:end -->
 
 ### D07 · Parsing my corpus
@@ -333,21 +333,21 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 
 | Reason | Files | What I did |
 |---|---|---|
-| none (0 failures) | 0 | All 26 downloaded files parsed cleanly into 86 pages in Postgres |
+| none | 0 | 0 failures out of 26 files — all 26 downloaded HTML bulletins parsed cleanly into 86 pages in Postgres |
 
-- The one I fixed: file none (0 failures out of 26 files) , reason n/a , fix: verified idempotent re-runs (`files=26 already_parsed=26 pages=0`) and 100% coverage across all 26 files
+- The one I fixed: file none (0 failures out of 26 files), reason N/A, fix: verified idempotency by re-running `parse_corpus.py` (`files=26 already_parsed=26 pages=0`).
 
 ### What I saw when I read my parsed pages
 
-- A page where the heading path is right (document, page, path): Android Security Bulletin—April 2025, page 2, `["Android Security Bulletin—April 2025", "Security patch levels"]`
-- Something that came out wrong (document, page, what): Android Security Bulletin—April 2025, page 1, minor breadcrumb/page-header lines before the main bulletin heading; CVE tables and section content are intact
-- A table: Markdown grid or loose text? (document, page): Android Security Bulletin—April 2025, page 2 — clean Markdown grid (`| CVE | References | Type | Severity | ... |`) via `trafilatura` (whereas `strip-tags` produced 0 tables / flat word soup)
+- A page where the heading path is right (document, page, path): Android Security Bulletin (`2024-10-01`), page 2, `["Android and Google service mitigations", "2024-10-01 security patch level vulnerability details", "Framework"]`
+- Something that came out wrong (document, page, what): Because `finish()` sets the document title from the first `#` heading in extracted Markdown, Android Security Bulletins get titled `"Android and Google service mitigations"` (and Pixel bulletins `"Announcements"`) instead of the bulletin month/title from `<title>` or the `Published ...` line.
+- A table: Markdown grid or loose text? (document, page): Markdown grid (`| CVE | References | Severity | Subcomponent |` and `| CVE | References | Type | Severity | Updated AOSP versions |`) on page 2 of the Android Security Bulletins.
 
 ### My parser choice
 
-- For PDFs I use pymupdf because it detects body font size to build heading paths and converts ruled tables into Markdown, and for HTML bulletins trafilatura preserves 6–14 Markdown tables and 8–16 headings per file in 0.07–0.14 s while stripping ~4.7k–5.3k menu/footer characters.
-- A kind of document in my corpus that neither parser handles well: scanned PDFs without a text layer (`no_text_layer`) or borderless/bold-only headings and tables that require OCR or layout-aware models.
+- For PDFs I use `PyMuPDF` because it detects body font size to build heading paths and converts ruled tables into Markdown, and for HTML bulletins `trafilatura` preserves 6–14 Markdown CVE tables and 8–16 headings per file in ~0.16–0.32 s while stripping ~4.7k–5.3k menu/footer characters that `strip tags` keeps with 0 headings and 0 tables.
+- A kind of document in my corpus that neither parser handles well: JavaScript-rendered pages, scanned PDFs without a text layer (`no_text_layer`), or borderless/bold-only tables that require OCR or layout-aware parsing.
 
 ### One thing that went wrong today, and how I fixed it
 
-- Pasting multi-line Python or SQL directly into PowerShell caused PowerShell syntax errors (`from`/`select` keywords); running scripts via `uv run python ...` and executing SQL in Neon's SQL Editor resolved it cleanly.
+- A stale PowerShell session variable (`$env:DATABASE_URL` ending in `?sslmode=require`) overrode `.env` (`?ssl=require`), causing `asyncpg` to raise `TypeError: connect() got an unexpected keyword argument 'sslmode'`. Clearing it with `Remove-Item Env:DATABASE_URL` let `parse_corpus.py` read `.env` and connect to Neon cleanly.
