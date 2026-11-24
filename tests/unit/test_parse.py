@@ -202,3 +202,13 @@ def test_comments_inside_code_blocks_are_not_headings(tmp_path):
     found, _ = parse.headings_in(doc.pages[0].text)
     assert found == [(1, "Install"), (2, "Next steps")]
     assert doc.title == "Install"
+
+
+def test_per_page_scan_detection_records_blank_pages(tmp_path):
+    pdf = make_pdf(
+        tmp_path / "mixed.pdf",
+        [body_page(("Page One", 14)), [], body_page(("Page Three", 14))],
+    )
+    doc = parse_file(pdf)
+    assert len(doc.pages) == 3
+    assert doc.scanned_pages == [2]

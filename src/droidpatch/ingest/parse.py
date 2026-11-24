@@ -35,6 +35,7 @@ class ParsedDoc:
     kind: str  # pdf, html, text or data
     title: str
     pages: list[ParsedPage]
+    scanned_pages: list[int] = field(default_factory=list)
 
 
 class ParseError(Exception):
@@ -163,12 +164,13 @@ def _open_pdf(path: Path) -> pymupdf.Document:
 def parse_pdf_pymupdf(path: Path) -> ParsedDoc:
     doc = _open_pdf(path)
     body = _body_size(doc)
-    texts, chars = [], 0
-    for page in doc:
+    texts, chars, scanned_pages = [], 0, []
+    for page_no, page in enumerate(doc, start=1):
         # Looking for tables is slow, so only do it on pages that have ruled lines at all.
         tables = list(page.find_tables().tables) if len(page.get_cdrawings()) >= 4 else []
         used: set[int] = set()
         out: list[str] = []
+        page_chars = 0
         for block in page.get_text("dict")["blocks"]:
             if block["type"] != 0:
                 continue  # an image
@@ -177,7 +179,9 @@ def parse_pdf_pymupdf(path: Path) -> ParsedDoc:
             if inside is not None:
                 if inside not in used:  # write the whole table once, as Markdown
                     used.add(inside)
-                    out.append("\n" + tables[inside].to_markdown().strip() + "\n")
+                    table_md = tables[inside].to_markdown().strip()
+                    out.append("\n" + table_md + "\n")
+                    page_chars += len(table_md)
                 continue
             for line in block["lines"]:
                 text = "".join(span["text"] for span in line["spans"]).strip()
@@ -187,12 +191,17 @@ def parse_pdf_pymupdf(path: Path) -> ParsedDoc:
                 bold = all(span["flags"] & 16 for span in line["spans"])
                 level = _heading_level(text, size, bold, body)
                 out.append(f"{'#' * level} {text}" if level else text)
-                chars += len(text)
+                page_chars += len(text)
             out.append("")  # blank line between blocks
         texts.append("\n".join(out))
+        chars += page_chars
+        if page_chars < MIN_CHARS_PER_PAGE:
+            scanned_pages.append(page_no)
     if chars < MIN_CHARS_PER_PAGE * len(texts):
         raise ParseError("no_text_layer", f"{chars} characters on {len(texts)} pages: needs OCR")
-    return finish("pymupdf", "pdf", (doc.metadata or {}).get("title") or "", texts)
+    parsed = finish("pymupdf", "pdf", (doc.metadata or {}).get("title") or "", texts)
+    parsed.scanned_pages = scanned_pages
+    return parsed
 
 
 def parse_pdf_ocr(path: Path, language: str = "eng") -> ParsedDoc:
