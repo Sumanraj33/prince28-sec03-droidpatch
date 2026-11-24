@@ -28,6 +28,21 @@ SAMPLE = [
     },
 ]
 
+SAMPLE_PAGES = [
+    {
+        "document_id": "001",
+        "page_no": 1,
+        "text": "# Alpha guideline\n\nOverview text.",
+        "headings": [],
+    },
+    {
+        "document_id": "001",
+        "page_no": 2,
+        "text": "## Framework\n\nDetails on page 2.",
+        "headings": ["Alpha guideline", "Framework"],
+    },
+]
+
 EXPOSURE_RECORDS = [
     {
         "id": "001",
@@ -80,6 +95,16 @@ class FakeRepo:
     async def get(self, external_id):
         return next(
             (item for item in SAMPLE if item["id"] == external_id),
+            None,
+        )
+
+    async def get_page(self, external_id, page_no):
+        return next(
+            (
+                item
+                for item in SAMPLE_PAGES
+                if item["document_id"] == external_id and item["page_no"] == page_no
+            ),
             None,
         )
 

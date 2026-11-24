@@ -237,3 +237,27 @@ def test_app_refuses_to_start_without_app_env(monkeypatch):
 def test_app_refuses_to_start_with_invalid_app_env():
     with pytest.raises(ValidationError):
         Settings(app_env="prod", _env_file=None)
+
+
+def test_get_document_page_returns_text_and_headings(client):
+    response = client.get("/v1/documents/001/pages", params={"page_no": 2})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "document_id": "001",
+        "page_no": 2,
+        "text": "## Framework\n\nDetails on page 2.",
+        "headings": ["Alpha guideline", "Framework"],
+    }
+
+
+def test_get_document_page_missing_returns_404_problem_details(client):
+    response = client.get("/v1/documents/001/pages", params={"page_no": 99})
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/problem+json")
+    body = response.json()
+    assert body["status"] == 404
+    assert body["title"] == "Not Found"
+    assert "99" in body["detail"]
+    assert body["instance"] == "/v1/documents/001/pages"
