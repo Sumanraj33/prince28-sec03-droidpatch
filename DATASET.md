@@ -64,6 +64,11 @@ The complete list, with a sha256 fingerprint of every file, is `data/manifest.js
 | 26 | Pixel Update Bulletin May 2025 | pixel-bulletin | 3 | 2026-11-23 | https://source.android.com/docs/security/bulletin/pixel/2025-05-01 |
 <!-- generated:end -->
 
+## Parsing Coverage
+
+- **Parsing coverage: 100% of files** (26 parsed documents out of 26 fetched files, 0 rows in `parse_failures`)
+- **Pages stored in Postgres:** 86 extracted pages across 26 documents (`trafilatura` article extraction trims site navigation/boilerplate from the 108 raw HTML page estimate)
+
 ## Known gaps
 
 - All 24 monthly bulletins in the start target (12 Android Security Bulletins and 12 Pixel Update Bulletins) are collected; remaining bulletins toward the 120+ full-corpus target will be added in future runs.
