@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from droidpatch.db.models import Document
+from droidpatch.db.models import Document, Page
 
 FILTER_KEY = re.compile(r"^[a-z_][a-z0-9_]{0,40}$")
 SORT_COLUMNS = {
@@ -115,6 +115,23 @@ class DocumentRepository:
         """Get one document by external ID."""
         doc = await self.session.scalar(select(Document).where(Document.external_id == external_id))
         return to_dict(doc) if doc else None
+
+    async def get_page(self, external_id: str, page_no: int) -> dict[str, Any] | None:
+        """Get one page of a document by external ID and 1-based page number."""
+        stmt = (
+            select(Page)
+            .join(Document, Page.document_id == Document.id)
+            .where(Document.external_id == external_id, Page.page_no == page_no)
+        )
+        page = await self.session.scalar(stmt)
+        if page is None:
+            return None
+        return {
+            "document_id": external_id,
+            "page_no": page.page_no,
+            "text": page.text,
+            "headings": list(page.headings or []),
+        }
 
     async def get_exposure(self, patch_level: date) -> dict[str, Any]:
         """Find Critical CVEs fixed after the supplied patch level."""

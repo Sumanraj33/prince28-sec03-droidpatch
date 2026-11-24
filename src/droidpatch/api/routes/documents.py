@@ -78,6 +78,24 @@ async def get_document(
     return document
 
 
+@router.get("/v1/documents/{document_id}/pages")
+async def get_document_page(
+    document_id: str,
+    page_no: int = Query(default=1, ge=1),
+    repo: DocumentRepository = Depends(get_repo),  # noqa: B008
+) -> dict[str, Any]:
+    """Retrieve one parsed page (text and heading path) of a document."""
+    page = await repo.get_page(document_id, page_no)
+
+    if page is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Page {page_no} not found for document '{document_id}'.",
+        )
+
+    return page
+
+
 @router.get("/v1/exposure")
 async def get_exposure(
     patch_level: date,
