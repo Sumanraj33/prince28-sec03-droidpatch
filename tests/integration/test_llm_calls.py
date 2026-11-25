@@ -1,9 +1,9 @@
 """llm_calls: every model call is written to a real Postgres and added up per day."""
 
-from droidpatch.db.session import make_engine, make_sessionmaker
 from sqlalchemy import func, select
 
 from droidpatch.config import Settings
+from droidpatch.db import make_engine, make_sessionmaker
 from droidpatch.db.llm_calls import UsageRepository, make_recorder
 from droidpatch.db.models import LlmCall
 from droidpatch.llm.gateway import FakeLLM, LLMError, LLMGateway
