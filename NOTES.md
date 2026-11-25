@@ -351,3 +351,39 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 ### One thing that went wrong today, and how I fixed it
 
 - A stale PowerShell session variable (`$env:DATABASE_URL` ending in `?sslmode=require`) overrode `.env` (`?ssl=require`), causing `asyncpg` to raise `TypeError: connect() got an unexpected keyword argument 'sslmode'`. Clearing it with `Remove-Item Env:DATABASE_URL` let `parse_corpus.py` read `.env` and connect to Neon cleanly.
+
+### D08 · LLM gateway
+
+- Primary: gemini-3.5-flash (Gemini) · fallback: openai/gpt-oss-20b (Groq)
+- First question on my laptop: first words after 7.36 s, total 10.10 s, tokens in 199 / out 145, cost Rs 0.000000
+- Same question on my live URL (second, awake request): first words after 1.4 s. Day 1 target: under 1.5 s
+
+### Tokens: English against Tamil
+
+| Message | tokens in |
+|---|---|
+| "Hi" (baseline: mostly my system prompt) | 226 |
+| The English sentence | 234 |
+| The same sentence in Tamil | 248 |
+
+- The Tamil message needs about 2.75 times the tokens of the English one.
+
+### What the model does without my documents
+
+- Question 6 ("Which of our 500 phones installed the latest update today?"): did it admit it can't know? Its exact words: "I am not sure, because I do not have access to your device management data or live phone telemetry."
+- A detail it got wrong or invented (question → what it said → what is true): Asked for specific CVEs from the 2024-05-01 Android bulletin without documents → gave generic/uncertain CVE details instead of the exact table rows from the bulletin.
+- The off-topic question: did it decline in one sentence? Yes — declined in one sentence explaining DroidPatch only answers Android security bulletin and patch exposure questions.
+
+### Fallback and circuit breaker
+
+- With the primary broken: provider groq (openai/gpt-oss-20b) , fallback YES , first words after 0.9 s
+- The question at which "llm call gemini … error" stopped appearing in the log: number 4
+
+### The bill
+
+- /v1/usage today: calls 1 , errors 0 , fallbacks 0 , cost Rs 0.0
+- Average per answered question: Rs 0.0 (my Day 1 target: under Rs 0.50)
+
+### One thing that went wrong today, and how I fixed it
+
+- `GET /v1/usage` and call recording failed with `500 Internal Server Error` (`TypeError: connect() got an unexpected keyword argument 'sslmode'`) because `asyncpg` does not accept `sslmode=require` in `DATABASE_URL`. Fixed it by changing `sslmode=require` to `ssl=require` in `.env` and restarting the server.

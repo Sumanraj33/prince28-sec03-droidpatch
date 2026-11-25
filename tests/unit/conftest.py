@@ -3,9 +3,10 @@ import logging
 import pytest
 from fastapi.testclient import TestClient
 
-from droidpatch.api.deps import check_db, get_repo
+from droidpatch.api.deps import check_db, get_gateway, get_repo, get_usage_repo
 from droidpatch.api.main import create_app
 from droidpatch.config import Settings
+from droidpatch.llm.gateway import FakeLLM, LLMGateway
 
 SAMPLE = [
     {
@@ -124,8 +125,29 @@ class FakeRepo:
         }
 
 
+class FakeUsage:
+    async def by_day(self, days=7):
+        return [
+            {
+                "day": "2026-11-25",
+                "calls": 3,
+                "errors": 1,
+                "fallbacks": 1,
+                "tokens_in": 300,
+                "tokens_out": 120,
+                "cost_inr": 0.0642,
+            }
+        ]
+
+
 @pytest.fixture
-def client(caplog):
+def llm():
+    """The fake model behind /v1/chat in unit tests. Put strings or errors in llm.script."""
+    return FakeLLM()
+
+
+@pytest.fixture
+def client(caplog, llm):
     caplog.set_level(logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
     logging.getLogger().disabled = False
@@ -139,6 +161,8 @@ def client(caplog):
         root_logger.addHandler(caplog.handler)
     app.dependency_overrides[get_repo] = lambda: FakeRepo()
     app.dependency_overrides[check_db] = lambda: True
+    app.dependency_overrides[get_gateway] = lambda: LLMGateway([llm])
+    app.dependency_overrides[get_usage_repo] = lambda: FakeUsage()
 
     with TestClient(app) as test_client:
         yield test_client
