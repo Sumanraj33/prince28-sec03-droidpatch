@@ -93,9 +93,12 @@ def test_api_against_real_database(seeded, settings, monkeypatch):
     test_sessionmaker = make_sessionmaker(test_engine)
     monkeypatch.setattr(db_mod, "engine", test_engine)
     monkeypatch.setattr(db_mod, "SessionLocal", test_sessionmaker)
+    seeded_settings = Settings(app_env="ci", database_url=seeded, _env_file=None)
     try:
         has_params = bool(inspect.signature(create_app).parameters)
-        app = create_app(settings) if has_params else create_app()
+        app = create_app(seeded_settings) if has_params else create_app()
+        app.state.engine = test_engine
+        app.state.sessionmaker = test_sessionmaker
         with TestClient(app) as client:
             assert client.get("/ready").json()["checks"]["database"] is True
             assert client.get("/v1/documents/002").json()["title"] == "Beta"
