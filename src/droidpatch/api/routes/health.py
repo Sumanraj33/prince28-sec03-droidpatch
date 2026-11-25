@@ -11,7 +11,7 @@ from droidpatch.config import Settings, get_settings
 router = APIRouter()
 
 
-@router.get("/health")
+@router.api_route("/health", methods=["GET", "HEAD"])
 def health(settings: Annotated[Settings, Depends(get_settings)]) -> dict[str, str]:
     """Liveness check: the application process is running."""
     return {
