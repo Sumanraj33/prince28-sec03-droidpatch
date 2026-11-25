@@ -356,7 +356,7 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 
 - Primary: gemini-3.5-flash (Gemini) · fallback: openai/gpt-oss-20b (Groq)
 - First question on my laptop: first words after 7.36 s, total 10.10 s, tokens in 199 / out 145, cost Rs 0.000000
-- Same question on my live URL (second, awake request): first words after 1.4 s. Day 1 target: under 1.5 s
+- Same question on my live URL (second, awake request): first words after 30.87 s (total 31.08 s — Gemini hit the 30.0 s timeout, so automatic fallback `fallback=YES` used `groq / openai/gpt-oss-20b`, which answered in 0.87 s). Day 1 target: under 1.5 s
 
 ### Tokens: English against Tamil
 
@@ -371,19 +371,22 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 ### What the model does without my documents
 
 - Question 6 ("Which of our 500 phones installed the latest update today?"): did it admit it can't know? Its exact words: "I am not sure, because I do not have access to your device management data or live phone telemetry."
-- A detail it got wrong or invented (question → what it said → what is true): Asked for specific CVEs from the 2024-05-01 Android bulletin without documents → gave generic/uncertain CVE details instead of the exact table rows from the bulletin.
+- A detail it got wrong or invented (question → what it said → what is true):
+  - Question: `"What is the difference between the 2024-05-01 and 2024-05-05 security patch levels?"`
+  - What it said: Claimed `2024-05-05` is *"a newer update... released between those dates"* containing *"vulnerabilities fixed after May 1."*
+  - What is true: Android publishes both patch levels in the same May 2024 bulletin—`2024-05-01` covers core Android OS/framework/system fixes, while `2024-05-05` adds kernel and closed-source vendor/chipset fixes (Qualcomm, MediaTek, Arm).
 - The off-topic question: did it decline in one sentence? Yes — declined in one sentence explaining DroidPatch only answers Android security bulletin and patch exposure questions.
 
 ### Fallback and circuit breaker
 
-- With the primary broken: provider groq (openai/gpt-oss-20b) , fallback YES , first words after 0.9 s
+- With the primary broken: provider groq (openai/gpt-oss-20b) , fallback YES , first words after 0.9 s (and proven on live Render when Gemini timed out after 30.0 s)
 - The question at which "llm call gemini … error" stopped appearing in the log: number 4
 
 ### The bill
 
-- /v1/usage today: calls 1 , errors 0 , fallbacks 0 , cost Rs 0.0
-- Average per answered question: Rs 0.0 (my Day 1 target: under Rs 0.50)
+- `/v1/usage` today (from live Postgres): calls 9 , errors 3 , fallbacks 3 , tokens in 1,283 , tokens out 904 , cost Rs 0.0253
+- Average per answered question: Rs 0.0042 (`0.0253 / 6` answered calls — my Day 1 target: under Rs 0.50)
 
 ### One thing that went wrong today, and how I fixed it
 
-- `GET /v1/usage` and call recording failed with `500 Internal Server Error` (`TypeError: connect() got an unexpected keyword argument 'sslmode'`) because `asyncpg` does not accept `sslmode=require` in `DATABASE_URL`. Fixed it by changing `sslmode=require` to `ssl=require` in `.env` and restarting the server.
+- `GET /v1/usage` and call recording failed locally with `500 Internal Server Error` (`TypeError: connect() got an unexpected keyword argument 'sslmode'`) because `asyncpg` does not accept `sslmode=require` in `DATABASE_URL` (fixed by using `ssl=require`). In CI, integration tests initially failed due to `droidpatch.db.session` imports and `test_api_against_real_database` pointing at port `5432` instead of `seeded`; updating `test_llm_calls.py` and passing `database_url=seeded` to `Settings` in `test_database.py` made all tests pass before merging PR #27 (`7d5aad3`) to `main` and deploying to Render (`https://droidpatch.onrender.com`).
