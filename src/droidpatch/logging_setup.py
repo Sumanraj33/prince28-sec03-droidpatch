@@ -2,9 +2,12 @@
 
 import json
 import logging
+from contextvars import ContextVar
 from typing import Any
 
 from droidpatch.config import Settings
+
+request_id_ctx: ContextVar[str] = ContextVar("request_id_ctx", default="")
 
 
 class JsonFormatter(logging.Formatter):

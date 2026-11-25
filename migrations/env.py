@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from logging.config import fileConfig
 
 from alembic import context
@@ -19,6 +20,8 @@ database_url = os.getenv("DATABASE_URL")
 
 if not database_url:
     raise RuntimeError("DATABASE_URL is missing")
+
+database_url = database_url.replace("ssl=require", "sslmode=require")
 
 config.set_main_option(
     "sqlalchemy.url",
@@ -71,6 +74,8 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(run_async_migrations())
 
 
