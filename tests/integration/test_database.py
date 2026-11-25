@@ -10,7 +10,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-import droidpatch.api.deps as deps_mod
 import droidpatch.db.database as db_mod
 from droidpatch.api.main import create_app
 from droidpatch.config import Settings
@@ -94,7 +93,6 @@ def test_api_against_real_database(seeded, settings, monkeypatch):
     test_sessionmaker = make_sessionmaker(test_engine)
     monkeypatch.setattr(db_mod, "engine", test_engine)
     monkeypatch.setattr(db_mod, "SessionLocal", test_sessionmaker)
-    monkeypatch.setattr(deps_mod, "SessionLocal", test_sessionmaker)
     try:
         has_params = bool(inspect.signature(create_app).parameters)
         app = create_app(settings) if has_params else create_app()
