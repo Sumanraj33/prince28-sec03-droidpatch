@@ -11,16 +11,37 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from droidpatch.api.deps import GatewayDep, UsageDep
+from droidpatch.llm.classify import classify
 from droidpatch.llm.gateway import LLMResult, LLMUnavailable
+from droidpatch.llm.prompts import latest, read_prompt
 
 router = APIRouter(tags=["chat"])
 
 PROMPT_VERSION = "chat_system_v1"  # the file prompts/chat_system_v1.md
+CLASSIFY_VERSION = "classify_v4"
+FIXED_REPLIES: dict[str, str] = {
+    "personal": (
+        "I can't know that because I don't have access to live device status or private fleet data."
+    ),
+    "off_topic": (
+        "I can't help with that; I only answer questions about Android security "
+        "bulletins and patch levels."
+    ),
+}
 
 
 def load_prompt(directory: Path, name: str = PROMPT_VERSION) -> str:
     """Read a prompt file. A missing file stops the app at start-up: fail fast."""
     return (directory / f"{name}.md").read_text(encoding="utf-8").strip()
+
+
+def _resolve_classifier(request: Request) -> tuple[str, str]:
+    prompts_dir = getattr(request.app.state, "prompts_dir", Path("prompts"))
+    try:
+        return CLASSIFY_VERSION, read_prompt(prompts_dir, CLASSIFY_VERSION)
+    except FileNotFoundError:
+        fallback_version = latest(prompts_dir, "classify")
+        return fallback_version, read_prompt(prompts_dir, fallback_version)
 
 
 class ChatMessage(BaseModel):
@@ -46,6 +67,24 @@ def summary(result: LLMResult) -> dict:
 
 @router.post("/chat")
 async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
+    classify_ver, classify_prompt = _resolve_classifier(request)
+    try:
+        label, _ = await classify(gateway, classify_prompt, classify_ver, body.message)
+    except LLMUnavailable as exc:
+        raise HTTPException(status_code=503, detail=f"No model could answer: {exc}") from exc
+
+    if label in FIXED_REPLIES:
+        fixed_text = FIXED_REPLIES[label]
+        if not body.stream:
+            return {"answer": fixed_text, "route": label}
+
+        async def fixed_events() -> AsyncIterator[str]:
+            yield sse({"delta": fixed_text})
+            yield sse({"route": label}, event="done")
+
+        headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        return StreamingResponse(fixed_events(), media_type="text/event-stream", headers=headers)
+
     messages = [
         {"role": "system", "content": request.app.state.system_prompt},
         *[{"role": m.role, "content": m.content} for m in body.history],
