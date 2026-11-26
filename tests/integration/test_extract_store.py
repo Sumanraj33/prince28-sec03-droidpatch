@@ -2,10 +2,11 @@
 
 from typing import Literal
 
+from droidpatch.db.session import make_engine, make_sessionmaker
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from droidpatch.db.database import SessionLocal, engine
+from droidpatch.config import Settings
 from droidpatch.db.models import Document, Page
 from droidpatch.llm.extract import run
 from droidpatch.llm.gateway import FakeLLM, LLMError, LLMGateway
@@ -35,9 +36,10 @@ def document(number: int, doc_type: str = "pdf") -> Document:
 
 
 async def test_extraction_is_stored_resumable_and_versioned(database_url):
-    del database_url
+    engine = make_engine(Settings(app_env="ci", database_url=database_url, _env_file=None))
+    sessionmaker = make_sessionmaker(engine)
     try:
-        async with SessionLocal() as session:
+        async with sessionmaker() as session:
             await session.execute(Document.__table__.delete())
             session.add_all([document(1), document(2), document(3), document(4, "record")])
             await session.commit()
@@ -46,10 +48,10 @@ async def test_extraction_is_stored_resumable_and_versioned(database_url):
             said: list[str] = []
             gateway = LLMGateway([llm], sleep=no_sleep)
             options |= {"sleep": no_sleep, "echo": said.append}
-            return await run(SessionLocal, gateway, Notice, "Fill.", version, **options), said
+            return await run(sessionmaker, gateway, Notice, "Fill.", version, **options), said
 
         async def stored() -> dict[str, dict]:
-            async with SessionLocal() as session:
+            async with sessionmaker() as session:
                 rows = await session.scalars(select(Document).order_by(Document.external_id))
                 return {row.external_id: row.metadata_ for row in rows}
 
