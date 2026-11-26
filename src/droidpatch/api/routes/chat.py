@@ -1,10 +1,10 @@
-"""POST /v1/chat (streaming) and GET /v1/usage (what the model calls cost)."""
+"""POST /v1/chat (streaming), GET /v1/llm/status, and GET /v1/usage."""
 
 import json
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -23,8 +23,14 @@ def load_prompt(directory: Path, name: str = PROMPT_VERSION) -> str:
     return (directory / f"{name}.md").read_text(encoding="utf-8").strip()
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
+    history: list[ChatMessage] = Field(default_factory=list, max_length=6)
     stream: bool = True
 
 
@@ -42,6 +48,7 @@ def summary(result: LLMResult) -> dict:
 async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
     messages = [
         {"role": "system", "content": request.app.state.system_prompt},
+        *[{"role": m.role, "content": m.content} for m in body.history],
         {"role": "user", "content": body.message},
     ]
     try:
@@ -67,6 +74,21 @@ async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
 
     headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     return StreamingResponse(events(), media_type="text/event-stream", headers=headers)
+
+
+@router.get("/llm/status")
+async def llm_status(gateway: GatewayDep) -> dict:
+    """Return each configured provider's name, model, and circuit-breaker state."""
+    return {
+        "providers": [
+            {
+                "name": p.name,
+                "model": p.model,
+                "state": gateway.breakers[p.name].state,
+            }
+            for p in gateway.providers
+        ]
+    }
 
 
 @router.get("/usage")
