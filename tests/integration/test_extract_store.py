@@ -2,11 +2,10 @@
 
 from typing import Literal
 
-from droidpatch.db.session import make_engine, make_sessionmaker
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from droidpatch.config import Settings
 from droidpatch.db.models import Document, Page
 from droidpatch.llm.extract import run
 from droidpatch.llm.gateway import FakeLLM, LLMError, LLMGateway
@@ -36,8 +35,13 @@ def document(number: int, doc_type: str = "pdf") -> Document:
 
 
 async def test_extraction_is_stored_resumable_and_versioned(database_url):
-    engine = make_engine(Settings(app_env="ci", database_url=database_url, _env_file=None))
-    sessionmaker = make_sessionmaker(engine)
+    async_url = (
+        database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if database_url.startswith("postgresql://")
+        else database_url
+    )
+    engine = create_async_engine(async_url, pool_pre_ping=True)
+    sessionmaker = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     try:
         async with sessionmaker() as session:
             await session.execute(Document.__table__.delete())
