@@ -409,28 +409,31 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 <!-- prompts:end -->
 
 
+
+
+
 ### D09 · Prompts and structured output
 
 - My best router prompt: classify_v4 with 20 / 20 (100%)
-- What I changed in v4, and what happened to the score: Added clearer domain-specific routing guidance and examples distinguishing Android security bulletin/CVE/patch questions (`docs`), live fleet/device or individual status/predictions (`personal`), and unrelated or prompt-injection attempts (`off_topic`), with strict single-word lowercase output rules; accuracy improved from 12/20 (60%) on v1 and 19/20 (95%) on v2/v3 to 20/20 (100%) with 0 invalid replies.
-- The question my best version still gets wrong (line, wanted, got), and why I think so: None on my 20-question test set (`classify_v4` scored 20/20); earlier versions (`classify_v2` / `classify_v3`) missed edge cases before v4 tightened the distinction between documentation questions and live device/fleet status.
+- What I changed in v4, and what happened to the score: Added clearer domain-specific routing guidance and examples distinguishing Android security bulletin/CVE/patch questions (docs), live fleet/device or individual status/predictions (personal), and unrelated or prompt-injection attempts (off_topic), with strict single-word lowercase output rules; accuracy improved from 12/20 (60%) on v1 and 19/20 (95%) on v2/v3 to 20/20 (100%) with 0 invalid replies.
+- The question my best version still gets wrong (line, wanted, got), and why I think so: None on my 20-question test set (classify_v4 scored 20/20); earlier versions (classify_v2 / classify_v3) missed edge cases before v4 tightened the distinction between documentation questions and live device/fleet status.
 - A label in my test set that I changed after seeing the results (or "none"): none
-- Input tokens per question: v1 114 , best version (`classify_v4`) 384 . Is the extra accuracy worth it? Yes — adding ~270 input tokens per routing call has negligible cost while raising routing accuracy to 100% and preventing misrouted queries.
+- Input tokens per question: v1 114 , best version (classify_v4) 384 . Is the extra accuracy worth it? Yes — adding ~270 input tokens per routing call has negligible cost while raising routing accuracy to 100% and preventing misrouted queries.
 
 ### My contract (DocMeta)
 
-- Fields I kept from my project card: `bulletin_month`, `patch_level`, `cve_id`, `component`, `severity`, `type`, `updated_aosp_versions` (kept all 7 project-card fields as `Values` lists of up to 8 short items per document, alongside the 5 common `DocMeta` fields: `doc_kind`, `year`, `language`, `summary`, `topics`).
-- Fields I deleted, and why they make no sense per document: None — kept all 7 project-card fields as list attributes per document rather than per-CVE/per-device fields, and set `model_config = ConfigDict(extra="forbid")` to reject unexpected keys.
-- The field I tightened, and how: Tightened list fields using `Values` (`Annotated[list[Short], Field(default_factory=list, max_length=8)]` with `Short` stripped and capped at 80 characters), `doc_kind` constrained via `Kind` `Literal[...]`, `year` bounded to `1950..2027`, and `topics` normalized to lowercase and deduplicated via `_tidy`.
+- Fields I kept from my project card: bulletin_month, patch_level, cve_id, component, severity, type, updated_aosp_versions (kept all 7 project-card fields as list attributes alongside doc_kind, year, language, summary, and topics).
+- Fields I deleted, and why they make no sense per document: None — kept all 7 project-card fields as list attributes per document with extra="forbid" on DocMeta.
+- The field I tightened, and how: Tightened list fields to at most 8 short items, constrained doc_kind via Literal, bounded year to 1950..2027 with a document-text check in extract(), and normalized/deduplicated topics.
 
 ### Extraction run
 
-- Prompt version: extract_v1 · documents: 26 ok, 5 repaired, 0 failed (of 26 parsed)
-- Not finished? Why, and how many are left: Finished all 26 parsed documents (`0` left across the corpus; completed across three runs of `5 + 11 + 10` as provider rate limits triggered pauses/stops and resumed cleanly from saved per-document progress).
-- Most common failure reason, and what I did about it: Schema/list-length and JSON formatting rejections during extraction—such as `cve_id` exceeding the 8-item cap (e.g., 13 items on `Android and Google service mitigations`), `summary` exceeding 300 characters, or a reply lacking a plain JSON object—handled automatically by `extract()`'s validation-retry repair loop (`repaired=5`, `failed=0`), while `429` / circuit-breaker pauses were handled by re-running `scripts/extract_metadata.py`.
-- A record that was valid but wrong (document, field, what it said, what is true): On `f-279b7405fb7db32a9924` (`2024-10-01` bulletin), `severity` returned `["High", "DoS", "EoP", "RCE"]` (mixing vulnerability types with severity ratings) and `bulletin_month` returned `null` despite `2024-10-01` appearing in the path and source URL.
-- Cost at list price: Rs 1.5969 in total (`Rs 0.3128 + Rs 0.6516 + Rs 0.6325` across the three `extract_v1` runs), Rs 0.0614 per document (`1.5969 / 26`).
+- Prompt version: extract_v1 (plus extract_v2 --schema started) · documents: 26 ok, 5 repaired, 0 failed (of 26 parsed)
+- Not finished? Why, and how many are left: All 26 parsed documents in the current corpus were extracted (0 remaining in the 26-doc corpus), while the extract_v2 --schema 20-document batch paused on provider rate limits (429) and remains resumable.
+- Most common failure reason, and what I did about it: Schema/list-length and JSON formatting rejections handled by extract() repair retries (repaired=5, failed=0), while 429 rate-limit stops are handled by waiting and re-running scripts/extract_metadata.py.
+- A record that was valid but wrong (document, field, what it said, what is true): On f-279b7405fb7db32a9924 (2024-10-01 bulletin), severity included vulnerability types alongside severity ratings and bulletin_month was null despite 2024-10-01 in the path/URL.
+- Cost at list price: Rs 1.5969 in total across the extract_v1 runs, Rs 0.0614 per document.
 
 ### One thing that went wrong today, and how I fixed it
 
-- `uv run poe test` / `uv run poe lint` initially stopped on a `ruff` import-sorting (`I001`) issue in `scripts/extract_metadata.py` and formatting checks (`ruff format --check .`) across 3 files (`scripts/compare_prompts.py`, `src/droidpatch/llm/gateway.py`, and `tests/integration/test_extract_store.py`), while extraction runs also hit provider rate limits (`429` / circuit open). Running `uv run ruff check --fix .` and `uv run ruff format .` made `uv run poe lint` pass (`78 files already formatted`), and re-running `uv run python scripts/extract_metadata.py` resumed cleanly until all 26 documents were extracted.
+- Ruff lint/format checks flagged files initially, wiring classify_v4 into /v1/chat required updating FakeLLM tests, and extraction hit 429 rate limits; ran ruff check --fix and ruff format, added router handling and tests, and kept main green (113 passed tests).
