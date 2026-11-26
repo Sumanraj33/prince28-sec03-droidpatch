@@ -86,9 +86,14 @@ async def extract(
         out.tokens_out += result.tokens_out
         out.cost_inr += result.cost_inr
         try:
-            out.record = schema.model_validate(parse_json(result.text))
+            candidate = schema.model_validate(parse_json(result.text))
+            year = getattr(candidate, "year", None)
+            if year is not None and str(year) not in text:
+                raise ValueError(f"year {year} is not in the document")
+            out.record = candidate
             return out
         except ValueError as error:  # bad JSON, or JSON that breaks the contract
+            out.record = None
             out.errors.append(explain(error))
             repair = f"That reply was rejected: {out.errors[-1]}. "
             repair += "Reply again with only the corrected JSON object."

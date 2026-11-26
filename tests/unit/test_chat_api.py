@@ -18,7 +18,7 @@ def events(body: str) -> list[tuple[str, dict]]:
 
 
 def test_chat_without_streaming_returns_json(client, llm):
-    llm.script = ["Use curly braces in the path."]
+    llm.script = ["docs", "Use curly braces in the path."]
     r = client.post(
         "/v1/chat", json={"message": "How do I declare a path parameter?", "stream": False}
     )
@@ -29,7 +29,7 @@ def test_chat_without_streaming_returns_json(client, llm):
 
 
 def test_chat_streams_pieces_and_ends_with_a_done_event(client, llm):
-    llm.script = ["Use curly braces in the path."]
+    llm.script = ["docs", "Use curly braces in the path."]
     r = client.post("/v1/chat", json={"message": "How do I declare a path parameter?"})
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
     received = events(r.text)
@@ -54,7 +54,7 @@ def test_when_no_model_can_answer_the_api_says_503_not_200(client, llm):
 
 
 def test_a_failure_in_the_middle_of_a_stream_is_reported_as_an_error_event(client, llm):
-    llm.script = [("partial", LLMError("HTTP 503: overloaded", retryable=True))]
+    llm.script = ["docs", ("partial", LLMError("HTTP 503: overloaded", retryable=True))]
     r = client.post("/v1/chat", json={"message": "hello"})
     assert r.status_code == 200  # too late to change it: the first bytes were already sent
     assert events(r.text)[-1][0] == "error"
@@ -106,8 +106,10 @@ def test_chat_sends_history_between_system_prompt_and_new_message(client):
     seen_messages: list[list[dict[str, str]]] = []
 
     class RecordingFakeLLM(FakeLLM):
-        async def generate(self, messages, *, temperature=0.2):
+        async def generate(self, messages, *, temperature=0.2, **options):
             seen_messages.append(messages)
+            if len(seen_messages) == 1:
+                return Reply("docs", tokens_in=10, tokens_out=1)
             return Reply("Pediatric guidance differs slightly.", tokens_in=45, tokens_out=5)
 
     gw = LLMGateway([RecordingFakeLLM("fake", "fake-1")])
@@ -134,7 +136,7 @@ def test_chat_sends_history_between_system_prompt_and_new_message(client):
         if previous is not None:
             client.app.dependency_overrides[get_gateway] = previous
 
-    sent = seen_messages[0]
+    sent = seen_messages[1]
     assert sent[0]["role"] == "system"
     assert sent[1:-1] == history
     assert sent[-1] == {"role": "user", "content": "and for children?"}

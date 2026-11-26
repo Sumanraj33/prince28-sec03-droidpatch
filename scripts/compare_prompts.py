@@ -13,10 +13,18 @@ import asyncio
 import hashlib
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
-from droidpatch.config import get_settings
-from droidpatch.db.database import SessionLocal, engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+
+from droidpatch.config import Settings, get_settings
+from droidpatch.db import database as db_database
 from droidpatch.db.llm_calls import make_recorder
 from droidpatch.llm.classify import LABELS, accuracy, classify, find_leaks
 from droidpatch.llm.gateway import LLMUnavailable, build_gateway
@@ -26,6 +34,28 @@ TESTSET = Path("eval/prompt_testset.jsonl")
 CACHE = Path("eval/cache/classify.json")
 NOTES = Path("NOTES.md")
 START, END = "<!-- prompts:start -->", "<!-- prompts:end -->"
+
+
+def _database_url(settings: Settings) -> str:
+    for attr in ("database_url", "async_database_url", "db_url"):
+        val = getattr(settings, attr, None)
+        if val:
+            return str(val)
+    raise RuntimeError("No database URL found on Settings")
+
+
+def make_engine(settings: Settings) -> AsyncEngine:
+    if hasattr(db_database, "engine") and isinstance(db_database.engine, AsyncEngine):
+        return db_database.engine
+    return create_async_engine(_database_url(settings))
+
+
+def make_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    if hasattr(db_database, "SessionLocal"):
+        return db_database.SessionLocal
+    if hasattr(db_database, "sessionmaker"):
+        return db_database.sessionmaker
+    return async_sessionmaker(engine, expire_on_commit=False)
 
 
 def load_testset() -> tuple[list[dict], int]:
@@ -70,7 +100,8 @@ async def run(args: argparse.Namespace) -> int:
     if len(examples) < 5:
         print("write at least 5 real examples in eval/prompt_testset.jsonl first")
         return 1
-    gateway = build_gateway(settings, make_recorder(SessionLocal))
+    engine = make_engine(settings)
+    gateway = build_gateway(settings, make_recorder(make_sessionmaker(engine)))
     cache = {} if args.no_cache or not CACHE.exists() else json.loads(CACHE.read_text("utf-8"))
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     rows, asked = [], 0
@@ -108,6 +139,7 @@ async def run(args: argparse.Namespace) -> int:
                     "accuracy": accuracy(results),
                     "invalid": sum(r["got"] == "invalid" for r in results),
                     "tokens_in": round(sum(r["tokens_in"] for r in results) / len(results)),
+                    "results": results,
                 }
             )
     except LLMUnavailable as error:
@@ -122,6 +154,13 @@ async def run(args: argparse.Namespace) -> int:
     write_table(rows, len(examples))
     for row in rows:
         print(f"{row['version']:<14} {row['correct']:>2}/{len(examples)}  {row['accuracy']:.0%}")
+        for true_label in (*LABELS, "invalid"):
+            matched = [r for r in row["results"] if r["label"] == true_label]
+            if not matched:
+                continue
+            breakdown = Counter(r["got"] for r in matched)
+            parts = ", ".join(f"{got}: {count}" for got, count in sorted(breakdown.items()))
+            print(f"    {true_label} -> {parts}")
     print(f"model calls made now: {asked} (the rest came from the cache) -> table in NOTES.md")
     return 0
 
