@@ -390,3 +390,7 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 ### One thing that went wrong today, and how I fixed it
 
 - `GET /v1/usage` and call recording failed locally with `500 Internal Server Error` (`TypeError: connect() got an unexpected keyword argument 'sslmode'`) because `asyncpg` does not accept `sslmode=require` in `DATABASE_URL` (fixed by using `ssl=require`). In CI, integration tests initially failed due to `droidpatch.db.session` imports and `test_api_against_real_database` pointing at port `5432` instead of `seeded`; updating `test_llm_calls.py` and passing `database_url=seeded` to `Settings` in `test_database.py` made all tests pass before merging PR #27 (`7d5aad3`) to `main` and deploying to Render (`https://droidpatch.onrender.com`).
+
+### D08 · Stretch tasks
+
+- `llm_calls` (`status = 'ok'`, n=6): `p50` = 24865.5 ms (24.87 s), `p95` = 31632.8 ms (31.63 s) — above Day 1's "p95 under 6 s" target.
