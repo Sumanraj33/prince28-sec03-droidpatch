@@ -39,6 +39,12 @@ async def start(
     return {"job_id": job_id, "queued": len(item_ids), "status_url": f"/v1/ingest/{job_id}"}
 
 
+@router.get("/stats")
+async def queue_stats(repo: IngestRepoDep) -> dict:
+    """Item counts by status over all jobs, plus age of the oldest queued item."""
+    return await repo.stats()
+
+
 @router.get("/dead-letter")
 async def dead_letter(repo: IngestRepoDep, limit: Annotated[int, Query(ge=1, le=200)] = 50) -> dict:
     """Every item that failed for good, with the reason. A person decides what happens next."""

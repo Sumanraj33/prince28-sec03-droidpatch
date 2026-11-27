@@ -214,6 +214,13 @@ class FakeIngestRepo:
     async def dead_letter(self, *, job_id=None, limit=50):
         return self.failed[:limit]
 
+    async def stats(self):
+        return {
+            "counts": {"queued": 2, "running": 1, "done": 5, "skipped": 0, "failed": 1},
+            "total": 9,
+            "oldest_queued_seconds": 42.5,
+        }
+
     async def failed_records(self):
         return [{"url": item["url"], "path": item["path"]} for item in self.failed]
 
