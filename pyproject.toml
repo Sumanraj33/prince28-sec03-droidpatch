@@ -21,6 +21,7 @@ dependencies = [
     "pypdf>=7.1.1",
     "pymupdf>=1.26,<2",
     "trafilatura>=2.4.0",
+    "arq>=0.28.0",
 ]
 
 [build-system]
@@ -61,6 +62,7 @@ show_missing = true
 skip_covered = true
 
 [tool.poe.tasks]
+worker = "arq droidpatch.workers.main.WorkerSettings"
 dev = "uvicorn droidpatch.api.main:create_app --factory --reload --no-access-log"
 lint = ["_ruff_check", "_ruff_format"]
 _ruff_check = "ruff check ."

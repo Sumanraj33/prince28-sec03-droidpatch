@@ -441,3 +441,37 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 ### One thing that went wrong today, and how I fixed it
 
 - Ruff lint/format checks flagged files initially, wiring classify_v4 into /v1/chat required updating FakeLLM tests, and extraction hit 429 rate limits; ran ruff check --fix and ruff format, added router handling and tests, and kept main green (113 passed tests).
+
+
+### D10 · Queue and worker
+
+- First run: 10 documents queued, finished in 215 s. Done 10, skipped 0, failed 0
+- Pace: 21.5 s per document (INGEST_RPM = 12, INGEST_CONCURRENCY = 2)
+
+### Kill test
+
+- Queued: 20 (16 new documents not yet in Neon). At the kill: queued 8, running 5, done 3, failed 0
+- After the new worker: done 10 + skipped 0 + failed 6 = 16 (and 1 more done / 5 failed after `--retry-failed`)
+- Documents in the database: 6, different ids: 6
+- The interrupted items came back after ~60–70 s. Why that long: arq's `job_timeout` (60 s visibility lock) had to expire before unacknowledged items were reclaimed and re-queued.
+- Why nothing was doubled (one sentence, in my own words): Every job computes the file's SHA-256 hash and checks `Document.external_id` and existing extraction metadata in Postgres before writing or calling the model again.
+
+### Dead-letter list
+
+| Stage (parse / extract / download / gave up) | Items | What I did |
+|---|---|---|
+| gave up after 3 tries: LLMUnavailable | 5 (11 total across jobs) | Hit Gemini quota/503 and Groq 8,000 TPM limits; retried with `--retry-failed` and kept rate pacing configured. |
+
+### Live ingestion
+
+- DroidPatch on Render: ___ of 5 documents done, ___ failed. The reasons: ___
+- A request without the token gets status ___
+
+### Week 2 against Monday's estimate
+
+- docs/CAPACITY.md said: 98 pages, 73,213 tokens. docs/INGEST_REPORT.md says: 24 pages, 16,341 tokens
+- The difference, and why: Monday's estimate counted all 24 corpus files (98 pages), whereas today's report reflects only the 6 documents currently in Postgres after deleting rows to test the queue and hitting rate limits on the remaining batch.
+
+### One thing that went wrong today, and how I fixed it
+
+- `scripts/ingest_report.py` imported `make_engine` from `droidpatch.db.session` (which doesn't exist in this repo), and `Settings` had no `database_url` attribute; I updated `scripts/ingest_report.py` to import `engine` directly from `droidpatch.db.database` so `docs/INGEST_REPORT.md` generated cleanly.

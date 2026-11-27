@@ -1,14 +1,15 @@
 """FastAPI application factory for DroidPatch."""
 
+import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
 from droidpatch.api.errors import http_exception_handler, validation_exception_handler
 from droidpatch.api.middleware import add_request_context
-from droidpatch.api.routes import chat
+from droidpatch.api.routes import chat, ingest
 from droidpatch.api.routes.documents import router as documents_router
 from droidpatch.api.routes.health import router as health_router
 from droidpatch.config import Settings, get_settings
@@ -27,13 +28,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        """Manage database engine lifecycle."""
+        """Manage database engine and optional embedded worker lifecycle."""
         logger.info("DroidPatch API starting")
         logger.info(
             "database_pool_status",
             extra={"pool_status": engine.pool.status()},
         )
+        worker = None
+        if settings.worker_in_api:
+            from droidpatch.workers.main import run_embedded
+
+            worker = asyncio.create_task(run_embedded(settings))
         yield
+        if worker:
+            worker.cancel()
+            with suppress(asyncio.CancelledError):
+                await worker
+        if getattr(app.state, "queue", None):
+            await app.state.queue.close()
         await engine.dispose()
         logger.info("DroidPatch API stopped")
 
@@ -54,6 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     v1 = APIRouter(prefix="/v1")
     v1.include_router(chat.router)
+    v1.include_router(ingest.router)
 
     app.include_router(health_router)
     app.include_router(documents_router)
