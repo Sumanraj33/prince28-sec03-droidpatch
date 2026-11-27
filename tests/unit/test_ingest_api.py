@@ -26,8 +26,14 @@ def test_start_needs_the_admin_token(client, queue):
     assert queue.items == []
 
 
-def test_without_a_configured_token_ingestion_is_closed_outside_your_laptop():
-    settings = Settings(app_env="production", database_url="postgresql://x/y", _env_file=None)
+def test_without_a_configured_token_ingestion_is_closed_outside_your_laptop(monkeypatch):
+    monkeypatch.delenv("ADMIN_TOKEN", raising=False)
+    settings = Settings(
+        app_env="production",
+        database_url="postgresql://x/y",
+        admin_token="",
+        _env_file=None,
+    )
     with TestClient(create_app(settings)) as public:
         assert public.post("/v1/ingest", json={}).status_code == 403
 
@@ -79,8 +85,14 @@ def test_dead_letter_lists_what_failed_for_good(client):
     }
 
 
-def test_when_redis_is_away_starting_is_a_503_and_the_rest_still_works(settings, ingest_repo):
-    settings.redis_url = "redis://127.0.0.1:1"  # nothing listens there
+def test_when_redis_is_away_starting_is_a_503_and_the_rest_still_works(ingest_repo):
+    settings = Settings(
+        app_env="ci",
+        database_url="postgresql://localhost:5432/unused",
+        admin_token="test-token",  # pragma: allowlist secret
+        redis_url="redis://127.0.0.1:1",  # nothing listens there
+        _env_file=None,
+    )
     app = create_app(settings)
     app.dependency_overrides[get_ingest_repo] = lambda: ingest_repo
     app.dependency_overrides[get_manifest] = lambda: [
