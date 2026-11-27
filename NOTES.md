@@ -464,8 +464,8 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 
 ### Live ingestion
 
-- DroidPatch on Render: ___ of 5 documents done, ___ failed. The reasons: ___
-- A request without the token gets status ___
+- DroidPatch on Render: 3 of 5 documents done, 2 failed (`job faf1678813e546e5bc0ad378c002bd54`, 12 pages, finished in 216 s). The reasons: both failed after 3 tries with `LLMUnavailable` (Gemini `HTTP 429` quota exceeded / circuit open, and Groq `HTTP 429` 200,000 TPD daily token limit reached).
+- A request without the token gets status `401` (`Missing or wrong X-Admin-Token header.`).
 
 ### Week 2 against Monday's estimate
 
