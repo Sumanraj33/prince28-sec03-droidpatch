@@ -4,9 +4,9 @@ from typing import Literal
 
 import pytest
 from arq import Retry
-from droidpatch.db.session import make_engine, make_sessionmaker
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from droidpatch.config import Settings
 from droidpatch.db.ingest_jobs import IngestRepository
@@ -30,8 +30,9 @@ async def no_sleep(seconds: float) -> None:
 async def world(database_url, tmp_path):
     """A clean database, three files on disk, and everything a job finds in its ctx."""
     settings = Settings(app_env="ci", database_url=database_url, _env_file=None)
-    engine = make_engine(settings)
-    sessionmaker = make_sessionmaker(engine)
+    url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    engine = create_async_engine(url, pool_pre_ping=True)
+    sessionmaker = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     async with sessionmaker() as session:
         for table in (Document, ParseFailure, IngestJob):
             await session.execute(table.__table__.delete())
