@@ -426,13 +426,17 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 - Fields I deleted, and why they make no sense per document: None — kept all 7 project-card fields as list attributes per document with extra="forbid" on DocMeta.
 - The field I tightened, and how: Tightened list fields to at most 8 short items, constrained doc_kind via Literal, bounded year to 1950..2027 with a document-text check in extract(), and normalized/deduplicated topics.
 
+
+
+
+
 ### Extraction run
 
-- Prompt version: extract_v1 (plus extract_v2 --schema started) · documents: 26 ok, 5 repaired, 0 failed (of 26 parsed)
-- Not finished? Why, and how many are left: All 26 parsed documents in the current corpus were extracted (0 remaining in the 26-doc corpus), while the extract_v2 --schema 20-document batch paused on provider rate limits (429) and remains resumable.
-- Most common failure reason, and what I did about it: Schema/list-length and JSON formatting rejections handled by extract() repair retries (repaired=5, failed=0), while 429 rate-limit stops are handled by waiting and re-running scripts/extract_metadata.py.
-- A record that was valid but wrong (document, field, what it said, what is true): On f-279b7405fb7db32a9924 (2024-10-01 bulletin), severity included vulnerability types alongside severity ratings and bulletin_month was null despite 2024-10-01 in the path/URL.
-- Cost at list price: Rs 1.5969 in total across the extract_v1 runs, Rs 0.0614 per document.
+- Prompt version: extract_v1 (completed on corpus; extract_v2 --schema started) · documents: 26 ok, 5 repaired, 0 failed (of 26 parsed)
+- Not finished? Why, and how many are left: All 26 parsed documents in the current corpus were covered by extract_v1; on extract_v2 --schema (--limit 20), 12 succeeded (5 from earlier SQL check + 7 in the first run, 0 failed) and 14 remained when runs hit HTTP 429 quota limits.
+- Most common failure reason, and what I did about it: Schema/list-length and JSON formatting rejections handled by extract() repair retries (repaired=5, failed=0), while HTTP 429 rate/quota stops are handled by waiting and re-running scripts/extract_metadata.py.
+- A record that was valid but wrong (document, field, what it said, what is true): On f-279b7405fb7db32a9924 (2024-10-01 bulletin), severity included vulnerability types alongside severity ratings and bulletin_month was null despite 2024-10-01 in the path/URL; in the latest extract_v2 SQL rows, "Android and Google service mitigations" recorded bulletin_month as ["May 2024"] in one row vs ["April"] (missing year) in another.
+- Cost at list price: Rs 1.5969 in total across the extract_v1 runs, Rs 0.0614 per document (plus Rs 0.3743 in the extract_v2 --schema run before 429).
 
 ### One thing that went wrong today, and how I fixed it
 
