@@ -33,3 +33,7 @@ Queueing ingestion lets POST /v1/ingest return 202 immediately while the worker 
 Checking hashes and existing records in Postgres keeps retries and worker restarts from creating duplicate documents.
 
 Pacing model calls and tracking dead-letter failures prevents rate limits from silently dropping items.
+
+- Storing job and per-item state (`queued`, `running`, `done`, `skipped`, `failed`, `attempts`) in Postgres while using Redis (`_job_id=f"ingest:{item_id}"`) for queuing kept items from being lost or duplicated across crashes and retries.
+- Content-hash idempotency (`sha256` / `document_id`) and separating permanent errors (`Permanent` / dead-letter) from retryable failures (`Retry`) prevented wasted work when Gemini or Groq hit `429` limits and opened circuits.
+- Running the embedded worker (`WORKER_IN_API=true`) on Render with internal `REDIS_URL` and `ADMIN_TOKEN` wired ingestion cleanly, while `scripts/ingest_report.py` generated live counts from Postgres.

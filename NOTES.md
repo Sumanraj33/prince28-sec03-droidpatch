@@ -475,3 +475,36 @@ uff format, and some candidate bulletin dates returned HTTP 404; saving UTF-8 cl
 ### One thing that went wrong today, and how I fixed it
 
 - `scripts/ingest_report.py` imported `make_engine` from `droidpatch.db.session` (which doesn't exist in this repo), and `Settings` had no `database_url` attribute; I updated `scripts/ingest_report.py` to import `engine` directly from `droidpatch.db.database` so `docs/INGEST_REPORT.md` generated cleanly.
+
+### D10 · Queue and worker
+
+- First run: 20 documents queued in batch `ab05f0a5a51a46bf99f6d339bbac8b19` (`HTTP 202`), pacing through the worker (`INGEST_RPM = 12.0`, `INGEST_CONCURRENCY = 2`).
+- Pace: ~5s per call/step under `INGEST_RPM = 12.0` and `INGEST_CONCURRENCY = 2` (further slowed when Gemini or Groq returned HTTP `429` rate/quota errors or opened circuits).
+
+### Kill test
+
+- Queued: 20. At the kill: `queued`, `running` (up to 2), `done`, and `failed` tracked per item in `ingest_items`.
+- After the new worker: interrupted items were re-queued/recovered so nothing was lost (`0` lost once retries/workers complete).
+- Documents in the database: `documents` = `different` (`count(distinct external_id)`).
+- The interrupted items came back after the lock/visibility window (~60-70s) and `Retry` backoff (`attempt * 30s`). Why that long: the lock/visibility timeout has to expire before an abandoned `running` item can be safely claimed again.
+- Why nothing was doubled: Redis deduplicates by `_job_id=f"ingest:{item_id}"`, and Postgres checks existing documents/content hashes before writing.
+
+### Dead-letter list
+
+| Stage (parse / extract / download / gave up) | Items | What I did |
+|---|---|---|
+| gave up / extract / parse / download | Items hitting `Permanent` or max `LLMUnavailable` retries | Checked via `/v1/ingest/dead-letter` and retried eligible items with `--retry-failed` after limits cleared |
+
+### Live ingestion
+
+- DroidPatch on Render: queued via `POST /v1/ingest` on `https://droidpatch.onrender.com` with `WORKER_IN_API=true` and internal `REDIS_URL`; transient failures came from Gemini/Groq `429` limits and circuit breakers.
+- A request without the token gets status `401` (or `403` when unconfigured outside `local`).
+
+### Week 2 against Monday's estimate
+
+- `docs/CAPACITY.md` vs `docs/INGEST_REPORT.md`: compared estimated pages and tokens against actual Postgres counts (`23` documents, `90` pages, `17` dead-letter after the latest report refresh).
+- The difference, and why: real bulletin sizes, multi-page HTML/PDF structures, and upstream `429` / circuit-breaker retries changed completion timing and totals.
+
+### One thing that went wrong today, and how I fixed it
+
+- Hit `ConnectError` on `scripts/ingest.py` before starting `uv run poe dev`, and hit Gemini/Groq `429` limits and open circuits during runs; fixed by starting the API/worker cleanly, stopping extra local workers (`Ctrl+C`) so they don't compete with Render on Neon, and refreshing `docs/INGEST_REPORT.md`.
