@@ -102,3 +102,27 @@ def test_when_redis_is_away_starting_is_a_503_and_the_rest_still_works(ingest_re
         r = lonely.post("/v1/ingest", json={}, headers=TOKEN)
         assert r.status_code == 503 and "Redis" in r.json()["detail"]
         assert lonely.get("/health").status_code == 200
+
+
+def test_stats_returns_counts_and_oldest_queued_age(client):
+    r = client.get("/v1/ingest/stats")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["counts"] == {"queued": 2, "running": 1, "done": 5, "skipped": 0, "failed": 1}
+    assert body["total"] == 9
+    assert body["oldest_queued_seconds"] == 42.5
+
+
+def test_stats_handles_empty_queue(client, ingest_repo):
+    async def empty_stats():
+        return {
+            "counts": {"queued": 0, "running": 0, "done": 3, "skipped": 0, "failed": 0},
+            "total": 3,
+            "oldest_queued_seconds": None,
+        }
+
+    ingest_repo.stats = empty_stats
+    r = client.get("/v1/ingest/stats")
+    assert r.status_code == 200
+    assert r.json()["counts"]["queued"] == 0
+    assert r.json()["oldest_queued_seconds"] is None
